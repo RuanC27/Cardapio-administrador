@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Painel do Gastrônomo</title>
+
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        <h1>🍴 Cardápio</h1>
+        <span>Sabores que conectam</span>
+    </div>
+
+    <div class="usuario">
+        <span>👤 Gastrônomo</span>
+    </div>
+
+</header>
+
+
+<main>
+
+    <aside>
+
+        <button type="button">Todas as categorias</button>
+        <button type="button">Entradas</button>
+        <button type="button">Pratos Principais</button>
+        <button type="button">Sobremesas</button>
+        <button type="button">Bebidas</button>
+        <button type="button">Categorias</button>
+        <button type="button">Sair</button>
+
+    </aside>
+
+
+    <section class="conteudo">
+
+        <div class="topo">
+
+            <div>
+
+                <h2>Olá, Gastrônomo!</h2>
+
+                <p>
+                    Gerencie os pratos do seu cardápio.
+                </p>
+
+            </div>
+
+
+            <div class="acoes">
+
+                <button
+                    type="button"
+                    id="novoPrato">
+
+                    + Novo Prato
+
+                </button>
+
+
+                <input
+                    id="campoPesquisa"
+                    type="text"
+                    placeholder="Pesquisar prato...">
+
+            </div>
+
+        </div>
+
+
+        <div id="mensagem"></div>
+
+
+        <div id="listaPratos">
+
+            <!--
+                Os pratos serão carregados
+                automaticamente pela API.
+            -->
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script src="js/admin.js"></script>
+
+</body>
+
+</html>
