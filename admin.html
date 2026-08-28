@@ -2,99 +2,194 @@
 <html lang="pt-BR">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Painel do Gastrônomo</title>
+    <title>Administração do Cardápio</title>
 
-    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="admin.css">
+
 </head>
 
 <body>
 
-<header>
+    <header class="topo">
 
-    <div class="logo">
-        <h1>🍴 Cardápio</h1>
-        <span>Sabores que conectam</span>
-    </div>
+        <div>
 
-    <div class="usuario">
-        <span>👤 Gastrônomo</span>
-    </div>
+            <h1>🍴 Cardápio</h1>
 
-</header>
+            <p>Painel administrativo</p>
 
+        </div>
 
-<main>
-
-    <aside>
-
-        <button type="button">Todas as categorias</button>
-        <button type="button">Entradas</button>
-        <button type="button">Pratos Principais</button>
-        <button type="button">Sobremesas</button>
-        <button type="button">Bebidas</button>
-        <button type="button">Categorias</button>
-        <button type="button">Sair</button>
-
-    </aside>
+    </header>
 
 
-    <section class="conteudo">
+    <main>
 
-        <div class="topo">
+        <!-- =====================================
+             ADICIONAR PRATO
+        ====================================== -->
 
-            <div>
+        <section class="painel">
 
-                <h2>Olá, Gastrônomo!</h2>
+            <div class="titulo">
+
+                <h2>Novo prato</h2>
 
                 <p>
-                    Gerencie os pratos do seu cardápio.
+                    Preencha as informações para adicionar um prato.
                 </p>
 
             </div>
 
 
-            <div class="acoes">
+            <form id="formPrato">
+
+
+                <div class="campo">
+
+                    <label for="nome">
+                        Nome
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nome"
+                        placeholder="Ex: Hambúrguer artesanal"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label for="preco">
+                        Preço
+                    </label>
+
+                    <input
+                        type="number"
+                        id="preco"
+                        placeholder="25.90"
+                        step="0.01"
+                        min="0"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="campo campo-grande">
+
+                    <label for="descricao">
+                        Descrição
+                    </label>
+
+                    <textarea
+                        id="descricao"
+                        placeholder="Descreva o prato..."
+                    ></textarea>
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label for="categoria">
+                        Categoria
+                    </label>
+
+                    <select id="categoria" required>
+
+                        <option value="">
+                            Escolha uma categoria
+                        </option>
+
+                        <option value="Entradas">
+                            Entradas
+                        </option>
+
+                        <option value="Pratos Principais">
+                            Pratos Principais
+                        </option>
+
+                        <option value="Bebidas">
+                            Bebidas
+                        </option>
+
+                        <option value="Sobremesas">
+                            Sobremesas
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="campo campo-grande">
+
+                    <label for="imagem">
+                        URL da imagem
+                    </label>
+
+                    <input
+                        type="url"
+                        id="imagem"
+                        placeholder="https://..."
+                    >
+
+                </div>
+
 
                 <button
-                    type="button"
-                    id="novoPrato">
-
-                    + Novo Prato
-
+                    type="submit"
+                    id="botaoAdicionar"
+                >
+                    + Adicionar prato
                 </button>
 
 
-                <input
-                    id="campoPesquisa"
-                    type="text"
-                    placeholder="Pesquisar prato...">
+            </form>
+
+        </section>
+
+
+        <!-- =====================================
+             PRATOS CADASTRADOS
+        ====================================== -->
+
+        <section class="painel">
+
+            <div class="titulo">
+
+                <h2>Pratos cadastrados</h2>
+
+                <p>
+                    Pratos atualmente armazenados no Supabase.
+                </p>
 
             </div>
 
-        </div>
+
+            <div id="listaPratos">
+
+                <p class="carregando">
+                    Carregando...
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
 
 
-        <div id="mensagem"></div>
-
-
-        <div id="listaPratos">
-
-            <!--
-                Os pratos serão carregados
-                automaticamente pela API.
-            -->
-
-        </div>
-
-    </section>
-
-</main>
-
-
-<script src="js/admin.js"></script>
+    <script src="admin.js"></script>
 
 </body>
 
