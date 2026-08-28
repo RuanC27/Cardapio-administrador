@@ -1,0 +1,98 @@
+/* =========================================
+   CARDS DOS PRATOS
+========================================= */
+
+#listaPratos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+
+.card {
+    display: block;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.10);
+}
+
+
+.card .imagem {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+
+.card .imagem img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+.card label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+
+.card input,
+.card textarea,
+.card select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+
+.card textarea {
+    resize: vertical;
+}
+
+
+.botoes {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+
+.botoes button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+
+.salvar {
+    background: #28a745;
+    color: white;
+}
+
+
+.excluir {
+    background: #dc3545;
+    color: white;
+}
+
+
+#novoPrato {
+    cursor: pointer;
+}
+
+
+#mensagem {
+    margin: 15px 0;
+    font-weight: bold;
+}
