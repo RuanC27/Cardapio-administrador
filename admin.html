@@ -2,170 +2,99 @@
 <html lang="pt-BR">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Administração do Cardápio</title>
+    <title>Painel do Gastrônomo</title>
 
     <link rel="stylesheet" href="css/admin.css">
-
 </head>
 
 <body>
 
-    <header class="header">
+<header>
 
-        <div>
+    <div class="logo">
+        <h1>🍴 Cardápio</h1>
+        <span>Sabores que conectam</span>
+    </div>
 
-            <h1>🍴 Administração</h1>
+    <div class="usuario">
+        <span>👤 Gastrônomo</span>
+    </div>
 
-            <p>Gerencie os pratos do seu cardápio</p>
+</header>
+
+
+<main>
+
+    <aside>
+
+        <button type="button">Todas as categorias</button>
+        <button type="button">Entradas</button>
+        <button type="button">Pratos Principais</button>
+        <button type="button">Sobremesas</button>
+        <button type="button">Bebidas</button>
+        <button type="button">Categorias</button>
+        <button type="button">Sair</button>
+
+    </aside>
+
+
+    <section class="conteudo">
+
+        <div class="topo">
+
+            <div>
+
+                <h2>Olá, Gastrônomo!</h2>
+
+                <p>
+                    Gerencie os pratos do seu cardápio.
+                </p>
+
+            </div>
+
+
+            <div class="acoes">
+
+                <button
+                    type="button"
+                    id="novoPrato">
+
+                    + Novo Prato
+
+                </button>
+
+
+                <input
+                    id="campoPesquisa"
+                    type="text"
+                    placeholder="Pesquisar prato...">
+
+            </div>
 
         </div>
 
-        <button id="novoPrato">
-            + Novo prato
-        </button>
 
-    </header>
+        <div id="mensagem"></div>
 
 
-    <main>
+        <div id="listaPratos">
 
-        <!-- ================= FORMULÁRIO ================= -->
+            <!--
+                Os pratos serão carregados
+                automaticamente pela API.
+            -->
 
-        <section id="areaFormulario" class="formulario escondido">
+        </div>
 
-            <h2 id="tituloFormulario">
-                Novo prato
-            </h2>
+    </section>
 
-
-            <input
-                type="hidden"
-                id="pratoId"
-            >
+</main>
 
 
-            <div class="campo">
-
-                <label>Nome do prato</label>
-
-                <input
-                    type="text"
-                    id="nome"
-                    placeholder="Ex: Hambúrguer artesanal"
-                >
-
-            </div>
-
-
-            <div class="campo">
-
-                <label>Descrição</label>
-
-                <textarea
-                    id="descricao"
-                    placeholder="Descrição do prato"
-                ></textarea>
-
-            </div>
-
-
-            <div class="campo">
-
-                <label>Preço</label>
-
-                <input
-                    type="number"
-                    id="preco"
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                >
-
-            </div>
-
-
-            <div class="campo">
-
-                <label>Categoria</label>
-
-                <select id="categoria">
-
-                    <option value="">
-                        Selecione uma categoria
-                    </option>
-
-                    <option value="Entradas">
-                        Entradas
-                    </option>
-
-                    <option value="Pratos Principais">
-                        Pratos Principais
-                    </option>
-
-                    <option value="Bebidas">
-                        Bebidas
-                    </option>
-
-                    <option value="Sobremesas">
-                        Sobremesas
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <div class="campo">
-
-                <label>URL da imagem</label>
-
-                <input
-                    type="text"
-                    id="imagem"
-                    placeholder="https://..."
-                >
-
-            </div>
-
-
-            <div class="botoesFormulario">
-
-                <button id="salvarPrato">
-                    Salvar prato
-                </button>
-
-                <button id="cancelarEdicao">
-                    Cancelar
-                </button>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= LISTA ================= -->
-
-        <section>
-
-            <h2>Pratos cadastrados</h2>
-
-            <div id="listaPratosAdmin">
-
-                Carregando pratos...
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <script src="js/admin.js"></script>
+<script src="js/admin.js"></script>
 
 </body>
 
