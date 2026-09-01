@@ -4,8 +4,11 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 "sb_publishable_ZJR2Z6gOfNO5rFhZb-RWwg_qvyY2b9Y";
 
-const BUCKET =
-"imagens";
+const BUCKET = "imagens";
+
+/* =========================================
+ELEMENTOS
+========================================= */
 
 const form =
 document.getElementById("formPrato");
@@ -29,95 +32,251 @@ document.getElementById("previewImagem");
 PRÉVIA DA IMAGEM
 ========================================= */
 
-inputImagem.addEventListener(
-"change",
-() => {
+inputImagem.addEventListener("change", function () {
 
 ```
-    const arquivo =
-        inputImagem.files[0];
+const arquivo = this.files[0];
+
+if (!arquivo) {
+
+    previewContainer.style.display = "none";
+
+    return;
+}
+
+const url =
+    URL.createObjectURL(arquivo);
+
+previewImagem.src = url;
+
+previewContainer.style.display = "block";
+```
+
+});
+
+/* =========================================
+CARREGAR PRATOS DO BANCO
+========================================= */
+
+async function carregarPratos() {
+
+```
+console.log("Buscando pratos...");
+
+try {
+
+    const resposta = await fetch(
+
+        `${SUPABASE_URL}/rest/v1/prato?select=*&order=id.asc`,
+
+        {
+
+            method: "GET",
+
+            headers: {
+
+                "apikey": SUPABASE_KEY,
+
+                "Authorization":
+                    `Bearer ${SUPABASE_KEY}`
+
+            }
+
+        }
+
+    );
 
 
-    if (!arquivo) {
+    if (!resposta.ok) {
 
-        previewContainer.style.display =
-            "none";
+        const erro =
+            await resposta.text();
 
-        return;
+        throw new Error(
+            erro
+        );
 
     }
 
 
-    const leitor =
-        new FileReader();
+    const pratos =
+        await resposta.json();
 
 
-    leitor.onload =
-        function (evento) {
-
-            previewImagem.src =
-                evento.target.result;
-
-            previewContainer.style.display =
-                "block";
-
-        };
+    console.log(
+        "Pratos encontrados:",
+        pratos
+    );
 
 
-    leitor.readAsDataURL(
-        arquivo
+    mostrarPratos(
+        pratos
     );
 
 }
-```
 
-);
+catch (erro) {
 
-/* =========================================
-HEADERS PARA API
-========================================= */
+    console.error(
+        "Erro ao carregar pratos:",
+        erro
+    );
 
-function headersJSON() {
 
-```
-return {
+    listaPratos.innerHTML = `
 
-    "apikey":
-        SUPABASE_KEY,
+        <p>
 
-    "Authorization":
-        `Bearer ${SUPABASE_KEY}`,
+            Não foi possível carregar os pratos.
 
-    "Content-Type":
-        "application/json"
+        </p>
 
-};
+    `;
+
+}
 ```
 
 }
 
 /* =========================================
-UPLOAD DA IMAGEM
+MOSTRAR PRATOS
 ========================================= */
 
-async function enviarImagem(
-arquivo
-) {
+function mostrarPratos(pratos) {
 
 ```
-/* Nome único para evitar imagens
-   com o mesmo nome */
+listaPratos.innerHTML = "";
+
+
+if (!pratos.length) {
+
+    listaPratos.innerHTML = `
+
+        <p>
+
+            Nenhum prato cadastrado.
+
+        </p>
+
+    `;
+
+    return;
+
+}
+
+
+pratos.forEach(prato => {
+
+    const card =
+        document.createElement("article");
+
+
+    card.className =
+        "prato";
+
+
+    const imagem =
+        prato.imagem ||
+        "https://via.placeholder.com/500x300?text=Sem+imagem";
+
+
+    const preco =
+        Number(prato.preco || 0);
+
+
+    card.innerHTML = `
+
+        <img
+
+            class="prato-imagem"
+
+            src="${imagem}"
+
+            alt="${prato.nome || "Prato"}"
+
+        >
+
+
+        <div class="prato-info">
+
+            <h3>
+
+                ${prato.nome || "Sem nome"}
+
+            </h3>
+
+
+            <p>
+
+                ${prato.descricao || "Sem descrição"}
+
+            </p>
+
+
+            <span class="prato-categoria">
+
+                ${prato.categoria || "Sem categoria"}
+
+            </span>
+
+
+            <span class="prato-preco">
+
+                R$ ${preco
+                    .toFixed(2)
+                    .replace(".", ",")}
+
+            </span>
+
+        </div>
+
+    `;
+
+
+    listaPratos.appendChild(
+        card
+    );
+
+});
+```
+
+}
+
+/* =========================================
+UPLOAD PARA SUPABASE STORAGE
+========================================= */
+
+async function enviarImagem(arquivo) {
+
+```
+console.log(
+    "Iniciando upload:",
+    arquivo.name
+);
+
+
+/* Nome único */
+
+const extensao =
+    arquivo.name
+        .split(".")
+        .pop();
+
 
 const nomeArquivo =
-    `${Date.now()}-${arquivo.name}`
-        .replace(
-            /[^a-zA-Z0-9.\-_]/g,
-            "-"
-        );
+    `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${extensao}`;
 
 
 const caminho =
     `pratos/${nomeArquivo}`;
+
+
+console.log(
+    "Caminho:",
+    caminho
+);
 
 
 const resposta =
@@ -138,7 +297,7 @@ const resposta =
                     `Bearer ${SUPABASE_KEY}`,
 
                 "Content-Type":
-                    arquivo.type || "image/jpeg"
+                    arquivo.type
 
             },
 
@@ -155,19 +314,29 @@ if (!resposta.ok) {
     const erro =
         await resposta.text();
 
-    throw new Error(
 
-        "Erro ao enviar imagem: " +
+    console.error(
+        "Erro do Storage:",
         erro
+    );
 
+
+    throw new Error(
+        `Erro no upload (${resposta.status}): ${erro}`
     );
 
 }
 
 
-/* URL pública da imagem */
+console.log(
+    "Upload concluído!"
+);
+
+
+/* URL pública */
 
 const urlImagem =
+
     `${SUPABASE_URL}` +
     `/storage/v1/object/public/` +
     `${BUCKET}/${caminho}`;
@@ -179,197 +348,15 @@ return urlImagem;
 }
 
 /* =========================================
-CARREGAR PRATOS
-========================================= */
-
-async function carregarPratos() {
-
-```
-listaPratos.innerHTML = `
-    <p class="carregando">
-        Carregando pratos...
-    </p>
-`;
-
-
-try {
-
-    const resposta =
-        await fetch(
-
-            `${SUPABASE_URL}/rest/v1/prato?select=*&order=id.asc`,
-
-            {
-
-                method: "GET",
-
-                headers:
-                    headersJSON()
-
-            }
-
-        );
-
-
-    if (!resposta.ok) {
-
-        const erro =
-            await resposta.text();
-
-        throw new Error(erro);
-
-    }
-
-
-    const pratos =
-        await resposta.json();
-
-
-    mostrarPratos(pratos);
-
-}
-
-catch (erro) {
-
-    console.error(
-        "Erro ao carregar:",
-        erro
-    );
-
-    listaPratos.innerHTML = `
-        <p>
-            Erro ao carregar os pratos.
-        </p>
-    `;
-
-}
-```
-
-}
-
-/* =========================================
-MOSTRAR PRATOS
-========================================= */
-
-function mostrarPratos(
-pratos
-) {
-
-```
-listaPratos.innerHTML = "";
-
-
-if (pratos.length === 0) {
-
-    listaPratos.innerHTML = `
-        <p>
-            Nenhum prato cadastrado.
-        </p>
-    `;
-
-    return;
-
-}
-
-
-pratos.forEach(
-    prato => {
-
-        const card =
-            document.createElement(
-                "article"
-            );
-
-
-        card.className =
-            "prato";
-
-
-        const imagem =
-            prato.imagem ||
-            "";
-
-
-        const preco =
-            Number(
-                prato.preco || 0
-            );
-
-
-        card.innerHTML = `
-
-            <img
-                class="prato-imagem"
-                src="${imagem}"
-                alt="${prato.nome || "Prato"}"
-            >
-
-            <div class="prato-info">
-
-                <h3>
-                    ${prato.nome || "Sem nome"}
-                </h3>
-
-                <p>
-                    ${prato.descricao || "Sem descrição"}
-                </p>
-
-                <span class="prato-categoria">
-                    ${prato.categoria || "Sem categoria"}
-                </span>
-
-                <span class="prato-preco">
-
-                    R$ ${preco
-                        .toFixed(2)
-                        .replace(".", ",")}
-
-                </span>
-
-            </div>
-
-        `;
-
-
-        listaPratos.appendChild(
-            card
-        );
-
-    }
-);
-```
-
-}
-
-/* =========================================
 ADICIONAR PRATO
 ========================================= */
 
 form.addEventListener(
+"submit",
+async function (evento) {
 
 ```
-"submit",
-
-async (
-    evento
-) => {
-
     evento.preventDefault();
-
-
-    const arquivo =
-        inputImagem.files[0];
-
-
-    if (!arquivo) {
-
-        alert(
-            "Escolha uma imagem."
-        );
-
-        return;
-
-    }
 
 
     const nome =
@@ -402,6 +389,14 @@ async (
             .value;
 
 
+    const arquivo =
+        inputImagem.files[0];
+
+
+    /* =====================================
+       VALIDAÇÃO
+    ===================================== */
+
     if (!nome) {
 
         alert(
@@ -414,11 +409,8 @@ async (
 
 
     if (
-
         isNaN(preco) ||
-
         preco < 0
-
     ) {
 
         alert(
@@ -441,19 +433,30 @@ async (
     }
 
 
+    if (!arquivo) {
+
+        alert(
+            "Escolha uma imagem."
+        );
+
+        return;
+
+    }
+
+
     try {
 
         botaoAdicionar.disabled =
             true;
 
 
+        /* =================================
+           UPLOAD
+        ================================= */
+
         botaoAdicionar.textContent =
             "Enviando imagem...";
 
-
-        /* =====================================
-           ENVIAR IMAGEM
-        ===================================== */
 
         const urlImagem =
             await enviarImagem(
@@ -461,13 +464,19 @@ async (
             );
 
 
+        console.log(
+            "URL da imagem:",
+            urlImagem
+        );
+
+
+        /* =================================
+           SALVAR BANCO
+        ================================= */
+
         botaoAdicionar.textContent =
             "Salvando prato...";
 
-
-        /* =====================================
-           DADOS DO PRATO
-        ===================================== */
 
         const dados = {
 
@@ -489,9 +498,11 @@ async (
         };
 
 
-        /* =====================================
-           SALVAR NO BANCO
-        ===================================== */
+        console.log(
+            "Salvando:",
+            dados
+        );
+
 
         const resposta =
             await fetch(
@@ -500,12 +511,18 @@ async (
 
                 {
 
-                    method:
-                        "POST",
+                    method: "POST",
 
                     headers: {
 
-                        ...headersJSON(),
+                        "apikey":
+                            SUPABASE_KEY,
+
+                        "Authorization":
+                            `Bearer ${SUPABASE_KEY}`,
+
+                        "Content-Type":
+                            "application/json",
 
                         "Prefer":
                             "return=representation"
@@ -527,17 +544,22 @@ async (
             const erro =
                 await resposta.text();
 
+
             throw new Error(
-                erro
+                `Erro ao salvar prato (${resposta.status}): ${erro}`
             );
 
         }
 
 
-        alert(
-            "Prato adicionado com sucesso!"
+        console.log(
+            "Prato salvo!"
         );
 
+
+        /* =================================
+           LIMPAR
+        ================================= */
 
         form.reset();
 
@@ -550,6 +572,13 @@ async (
             "none";
 
 
+        alert(
+            "Prato adicionado com sucesso!"
+        );
+
+
+        /* Atualizar lista */
+
         carregarPratos();
 
     }
@@ -557,16 +586,14 @@ async (
     catch (erro) {
 
         console.error(
+            "ERRO:",
             erro
         );
 
 
         alert(
-
-            "Erro:\n\n" +
-
+            "Não foi possível adicionar o prato.\n\n" +
             erro.message
-
         );
 
     }
