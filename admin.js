@@ -22,7 +22,6 @@ PRÉVIA DA IMAGEM
 
 if (inputImagem) {
 
-```
 inputImagem.addEventListener("change", function () {
 
     const arquivo = this.files[0];
@@ -56,7 +55,7 @@ inputImagem.addEventListener("change", function () {
     }
 
 });
-```
+
 
 }
 
@@ -66,7 +65,6 @@ CARREGAR PRATOS
 
 async function carregarPratos() {
 
-```
 console.log("Buscando pratos no Supabase...");
 
 if (!listaPratos) {
@@ -142,7 +140,6 @@ catch (erro) {
         </div>
     `;
 }
-```
 
 }
 
@@ -152,7 +149,6 @@ MOSTRAR PRATOS
 
 function mostrarPratos(pratos) {
 
-```
 listaPratos.innerHTML = "";
 
 
@@ -251,7 +247,6 @@ pratos.forEach(function (prato) {
     listaPratos.appendChild(card);
 
 });
-```
 
 }
 
@@ -261,7 +256,6 @@ UPLOAD DA IMAGEM
 
 async function enviarImagem(arquivo) {
 
-```
 if (!arquivo) {
 
     throw new Error(
@@ -357,7 +351,6 @@ return (
     "/" +
     caminho
 );
-```
 
 }
 
@@ -367,7 +360,6 @@ ADICIONAR PRATO
 
 if (form) {
 
-```
 form.addEventListener(
     "submit",
     async function (evento) {
@@ -588,7 +580,6 @@ form.addEventListener(
 
     }
 );
-```
 
 }
 
