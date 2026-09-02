@@ -6,56 +6,87 @@ const SUPABASE_KEY =
 
 const BUCKET = "imagens";
 
-const form = document.getElementById("formPrato");
-const listaPratos = document.getElementById("listaPratos");
-const botaoAdicionar = document.getElementById("botaoAdicionar");
+/* =========================================
+ELEMENTOS
+========================================= */
 
-const inputImagem = document.getElementById("imagem");
-const previewContainer = document.getElementById("previewContainer");
-const previewImagem = document.getElementById("previewImagem");
+const form =
+document.getElementById("formPrato");
 
-console.log("ADMIN.JS CARREGADO");
+const listaPratos =
+document.getElementById("listaPratos");
+
+const botaoAdicionar =
+document.getElementById("botaoAdicionar");
+
+const inputImagem =
+document.getElementById("imagem");
+
+const previewContainer =
+document.getElementById("previewContainer");
+
+const previewImagem =
+document.getElementById("previewImagem");
 
 /* =========================================
 PRÉVIA DA IMAGEM
 ========================================= */
 
-if (inputImagem) {
+inputImagem.addEventListener(
+"change",
+function () {
 
-inputImagem.addEventListener("change", function () {
-
+```
     const arquivo = this.files[0];
 
     if (!arquivo) {
 
-        if (previewContainer) {
-            previewContainer.style.display = "none";
-        }
+        previewContainer.style.display =
+            "none";
+
+        previewImagem.src = "";
 
         return;
+
     }
 
-    if (!arquivo.type.startsWith("image/")) {
 
-        alert("Selecione uma imagem válida.");
+    const urlPreview =
+        URL.createObjectURL(arquivo);
 
-        inputImagem.value = "";
 
-        return;
-    }
+    previewImagem.src =
+        urlPreview;
 
-    const url = URL.createObjectURL(arquivo);
 
-    if (previewImagem) {
-        previewImagem.src = url;
-    }
+    previewContainer.style.display =
+        "block";
 
-    if (previewContainer) {
-        previewContainer.style.display = "block";
-    }
+}
+```
 
-});
+);
 
+/* =========================================
+HEADERS PARA API
+========================================= */
+
+function headers() {
+
+```
+return {
+
+    "apikey":
+        SUPABASE_KEY,
+
+    "Authorization":
+        `Bearer ${SUPABASE_KEY}`,
+
+    "Content-Type":
+        "application/json"
+
+};
+```
 
 }
 
@@ -65,59 +96,60 @@ CARREGAR PRATOS
 
 async function carregarPratos() {
 
-console.log("Buscando pratos no Supabase...");
-
-if (!listaPratos) {
-
-    console.error("Elemento listaPratos não encontrado.");
-
-    return;
-}
-
-listaPratos.innerHTML = `
+```
+listaPratos.innerHTML =
+    `
     <p class="carregando">
         Carregando pratos...
     </p>
-`;
+    `;
+
 
 try {
 
-    const resposta = await fetch(
-        SUPABASE_URL + "/rest/v1/prato?select=*",
-        {
-            method: "GET",
+    const resposta =
+        await fetch(
 
-            headers: {
-                "apikey": SUPABASE_KEY,
-                "Authorization": "Bearer " + SUPABASE_KEY
+            `${SUPABASE_URL}/rest/v1/prato?select=*&order=id.asc`,
+
+            {
+
+                method:
+                    "GET",
+
+                headers:
+                    headers()
+
             }
-        }
-    );
 
-
-    const texto = await resposta.text();
-
-    console.log(
-        "Resposta Supabase:",
-        resposta.status,
-        texto
-    );
+        );
 
 
     if (!resposta.ok) {
 
+        const erro =
+            await resposta.text();
+
         throw new Error(
-            "Erro " +
-            resposta.status +
-            ": " +
-            texto
+            `Erro ${resposta.status}: ${erro}`
         );
+
     }
 
 
-    const pratos = JSON.parse(texto);
+    const pratos =
+        await resposta.json();
 
-    mostrarPratos(pratos);
+
+    console.log(
+        "Pratos encontrados:",
+        pratos
+    );
+
+
+    mostrarPratos(
+        pratos
+    );
 
 }
 
@@ -128,18 +160,16 @@ catch (erro) {
         erro
     );
 
-    listaPratos.innerHTML = `
-        <div class="erro">
-            <p>
-                Não foi possível carregar os pratos.
-            </p>
 
-            <p>
-                ${erro.message}
-            </p>
-        </div>
-    `;
+    listaPratos.innerHTML =
+        `
+        <p>
+            Erro ao carregar os pratos.
+        </p>
+        `;
+
 }
+```
 
 }
 
@@ -149,208 +179,207 @@ MOSTRAR PRATOS
 
 function mostrarPratos(pratos) {
 
-listaPratos.innerHTML = "";
+```
+listaPratos.innerHTML =
+    "";
 
 
-if (!pratos || pratos.length === 0) {
+if (pratos.length === 0) {
 
-    listaPratos.innerHTML = `
+    listaPratos.innerHTML =
+        `
         <p>
             Nenhum prato cadastrado.
         </p>
-    `;
+        `;
 
     return;
+
 }
 
 
-pratos.forEach(function (prato) {
+pratos.forEach(
+    prato => {
 
-    const card =
-        document.createElement("article");
-
-    card.className = "prato";
-
-
-    const imagem =
-        prato.imagem ||
-        "https://via.placeholder.com/500x300?text=Sem+imagem";
+        const card =
+            document.createElement(
+                "article"
+            );
 
 
-    const preco =
-        Number(prato.preco || 0);
+        card.className =
+            "prato";
 
 
-    const img =
-        document.createElement("img");
-
-    img.className = "prato-imagem";
-
-    img.src = imagem;
-
-    img.alt =
-        prato.nome || "Prato";
+        const imagem =
+            prato.imagem ||
+            "https://via.placeholder.com/500x300?text=Sem+imagem";
 
 
-    const info =
-        document.createElement("div");
-
-    info.className =
-        "prato-info";
-
-
-    const nome =
-        document.createElement("h3");
-
-    nome.textContent =
-        prato.nome || "Sem nome";
+        const preco =
+            Number(
+                prato.preco || 0
+            );
 
 
-    const descricao =
-        document.createElement("p");
+        card.innerHTML =
+            `
 
-    descricao.textContent =
-        prato.descricao || "Sem descrição";
+            <img
+                class="prato-imagem"
+                src="${imagem}"
+                alt="${prato.nome || "Prato"}"
+            >
 
+            <div class="prato-info">
 
-    const categoria =
-        document.createElement("span");
+                <h3>
+                    ${prato.nome || "Sem nome"}
+                </h3>
 
-    categoria.className =
-        "prato-categoria";
+                <p>
+                    ${prato.descricao || "Sem descrição"}
+                </p>
 
-    categoria.textContent =
-        prato.categoria || "Sem categoria";
+                <span class="prato-categoria">
+                    ${prato.categoria || "Sem categoria"}
+                </span>
 
+                <span class="prato-preco">
+                    R$ ${preco
+                        .toFixed(2)
+                        .replace(".", ",")}
+                </span>
 
-    const valor =
-        document.createElement("span");
+            </div>
 
-    valor.className =
-        "prato-preco";
-
-    valor.textContent =
-        "R$ " +
-        preco.toFixed(2).replace(".", ",");
-
-
-    info.appendChild(nome);
-    info.appendChild(descricao);
-    info.appendChild(categoria);
-    info.appendChild(valor);
-
-
-    card.appendChild(img);
-    card.appendChild(info);
+            `;
 
 
-    listaPratos.appendChild(card);
+        listaPratos.appendChild(
+            card
+        );
 
-});
+    }
+);
+```
 
 }
 
 /* =========================================
-UPLOAD DA IMAGEM
+ENVIAR IMAGEM PARA SUPABASE STORAGE
 ========================================= */
 
 async function enviarImagem(arquivo) {
 
-if (!arquivo) {
-
-    throw new Error(
-        "Nenhuma imagem foi selecionada."
-    );
-}
-
-
+```
 console.log(
     "Enviando imagem:",
     arquivo.name
 );
 
 
+/* =====================================
+   CRIAR NOME ÚNICO
+===================================== */
+
 const extensao =
     arquivo.name
         .split(".")
-        .pop()
-        .toLowerCase();
+        .pop();
 
 
 const nomeArquivo =
-    Date.now() +
-    "-" +
-    Math.random()
+    `${Date.now()}-${Math.random()
         .toString(36)
-        .substring(2) +
-    "." +
-    extensao;
+        .substring(2)}.${extensao}`;
 
 
 const caminho =
-    "pratos/" +
-    nomeArquivo;
-
-
-const url =
-    SUPABASE_URL +
-    "/storage/v1/object/" +
-    BUCKET +
-    "/" +
-    caminho;
-
-
-const resposta =
-    await fetch(
-        url,
-        {
-            method: "POST",
-
-            headers: {
-                "apikey": SUPABASE_KEY,
-
-                "Authorization":
-                    "Bearer " +
-                    SUPABASE_KEY,
-
-                "Content-Type":
-                    arquivo.type
-            },
-
-            body: arquivo
-        }
-    );
-
-
-const texto =
-    await resposta.text();
+    `pratos/${nomeArquivo}`;
 
 
 console.log(
-    "Upload:",
-    resposta.status,
-    texto
+    "Caminho da imagem:",
+    caminho
 );
+
+
+/* =====================================
+   UPLOAD
+===================================== */
+
+const resposta =
+    await fetch(
+
+        `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${caminho}`,
+
+        {
+
+            method:
+                "POST",
+
+            headers: {
+
+                "apikey":
+                    SUPABASE_KEY,
+
+                "Authorization":
+                    `Bearer ${SUPABASE_KEY}`,
+
+                "Content-Type":
+                    arquivo.type
+
+            },
+
+            body:
+                arquivo
+
+        }
+
+    );
 
 
 if (!resposta.ok) {
 
-    throw new Error(
-        "Erro no upload da imagem: " +
-        resposta.status +
-        " - " +
-        texto
+    const erro =
+        await resposta.text();
+
+
+    console.error(
+        "Erro no Storage:",
+        erro
     );
+
+
+    throw new Error(
+        `Erro no upload da imagem (${resposta.status}): ${erro}`
+    );
+
 }
 
 
-return (
-    SUPABASE_URL +
-    "/storage/v1/object/public/" +
-    BUCKET +
-    "/" +
-    caminho
+console.log(
+    "Imagem enviada com sucesso!"
 );
+
+
+/* =====================================
+   GERAR URL PÚBLICA
+===================================== */
+
+const urlImagem =
+    `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${caminho}`;
+
+
+console.log(
+    "URL pública:",
+    urlImagem
+);
+
+
+return urlImagem;
+```
 
 }
 
@@ -358,237 +387,303 @@ return (
 ADICIONAR PRATO
 ========================================= */
 
-if (form) {
-
 form.addEventListener(
-    "submit",
-    async function (evento) {
 
-        evento.preventDefault();
+```
+"submit",
+
+async (
+    evento
+) => {
+
+    evento.preventDefault();
 
 
-        const nome =
+    /* =================================
+       PEGAR DADOS DO FORMULÁRIO
+    ================================= */
+
+    const nome =
+        document
+            .getElementById("nome")
+            .value
+            .trim();
+
+
+    const descricao =
+        document
+            .getElementById("descricao")
+            .value
+            .trim();
+
+
+    const preco =
+        Number(
+
             document
-                .getElementById("nome")
+                .getElementById("preco")
                 .value
-                .trim();
+
+        );
 
 
-        const descricao =
-            document
-                .getElementById("descricao")
-                .value
-                .trim();
+    const categoria =
+        document
+            .getElementById("categoria")
+            .value;
 
 
-        const preco =
-            Number(
-                document
-                    .getElementById("preco")
-                    .value
+    const arquivo =
+        inputImagem.files[0];
+
+
+    /* =================================
+       VALIDAÇÕES
+    ================================= */
+
+    if (!nome) {
+
+        alert(
+            "Digite o nome do prato."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        isNaN(preco) ||
+        preco < 0
+    ) {
+
+        alert(
+            "Digite um preço válido."
+        );
+
+        return;
+
+    }
+
+
+    if (!categoria) {
+
+        alert(
+            "Escolha uma categoria."
+        );
+
+        return;
+
+    }
+
+
+    if (!arquivo) {
+
+        alert(
+            "Escolha uma imagem para o prato."
+        );
+
+        return;
+
+    }
+
+
+    /* Verificar se é imagem */
+
+    if (
+        !arquivo.type.startsWith(
+            "image/"
+        )
+    ) {
+
+        alert(
+            "O arquivo selecionado não é uma imagem."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        botaoAdicionar.disabled =
+            true;
+
+
+        /* =================================
+           1. ENVIAR IMAGEM
+        ================================= */
+
+        botaoAdicionar.textContent =
+            "Enviando imagem...";
+
+
+        const urlImagem =
+            await enviarImagem(
+                arquivo
             );
 
 
-        const categoria =
-            document
-                .getElementById("categoria")
-                .value;
+        /* =================================
+           2. PREPARAR DADOS
+        ================================= */
+
+        const dados = {
+
+            nome:
+                nome,
+
+            descricao:
+                descricao,
+
+            preco:
+                preco,
+
+            categoria:
+                categoria,
+
+            imagem:
+                urlImagem
+
+        };
 
 
-        const arquivo =
-            inputImagem.files[0];
+        console.log(
+            "Dados do prato:",
+            dados
+        );
 
 
-        if (!nome) {
+        /* =================================
+           3. SALVAR NO BANCO
+        ================================= */
 
-            alert(
-                "Digite o nome do prato."
+        botaoAdicionar.textContent =
+            "Salvando prato...";
+
+
+        const resposta =
+            await fetch(
+
+                `${SUPABASE_URL}/rest/v1/prato`,
+
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "apikey":
+                            SUPABASE_KEY,
+
+                        "Authorization":
+                            `Bearer ${SUPABASE_KEY}`,
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Prefer":
+                            "return=representation"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            dados
+                        )
+
+                }
+
             );
 
-            return;
-        }
 
+        if (!resposta.ok) {
 
-        if (
-            isNaN(preco) ||
-            preco < 0
-        ) {
-
-            alert(
-                "Digite um preço válido."
-            );
-
-            return;
-        }
-
-
-        if (!categoria) {
-
-            alert(
-                "Escolha uma categoria."
-            );
-
-            return;
-        }
-
-
-        if (!arquivo) {
-
-            alert(
-                "Escolha uma imagem."
-            );
-
-            return;
-        }
-
-
-        try {
-
-            botaoAdicionar.disabled =
-                true;
-
-
-            botaoAdicionar.textContent =
-                "Enviando imagem...";
-
-
-            const urlImagem =
-                await enviarImagem(
-                    arquivo
-                );
-
-
-            botaoAdicionar.textContent =
-                "Salvando prato...";
-
-
-            const dados = {
-
-                nome: nome,
-
-                descricao: descricao,
-
-                preco: preco,
-
-                categoria: categoria,
-
-                imagem: urlImagem
-            };
-
-
-            const resposta =
-                await fetch(
-                    SUPABASE_URL +
-                    "/rest/v1/prato",
-                    {
-                        method: "POST",
-
-                        headers: {
-
-                            "apikey":
-                                SUPABASE_KEY,
-
-                            "Authorization":
-                                "Bearer " +
-                                SUPABASE_KEY,
-
-                            "Content-Type":
-                                "application/json",
-
-                            "Prefer":
-                                "return=representation"
-                        },
-
-                        body:
-                            JSON.stringify(
-                                dados
-                            )
-                    }
-                );
-
-
-            const texto =
+            const erro =
                 await resposta.text();
 
 
-            console.log(
-                "Salvar prato:",
-                resposta.status,
-                texto
-            );
+            throw new Error(
 
+                `Erro ao salvar o prato (${resposta.status}): ${erro}`
 
-            if (!resposta.ok) {
-
-                throw new Error(
-                    "Erro ao salvar prato: " +
-                    resposta.status +
-                    " - " +
-                    texto
-                );
-            }
-
-
-            alert(
-                "Prato adicionado com sucesso!"
-            );
-
-
-            form.reset();
-
-
-            if (previewImagem) {
-                previewImagem.src = "";
-            }
-
-
-            if (previewContainer) {
-
-                previewContainer.style.display =
-                    "none";
-            }
-
-
-            await carregarPratos();
-
-        }
-
-        catch (erro) {
-
-            console.error(
-                "ERRO:",
-                erro
-            );
-
-
-            alert(
-                "Não foi possível adicionar o prato.\n\n" +
-                erro.message
             );
 
         }
 
-        finally {
 
-            botaoAdicionar.disabled =
-                false;
+        const pratoSalvo =
+            await resposta.json();
 
-            botaoAdicionar.textContent =
-                "+ Adicionar prato";
 
-        }
+        console.log(
+            "Prato salvo:",
+            pratoSalvo
+        );
+
+
+        /* =================================
+           4. LIMPAR FORMULÁRIO
+        ================================= */
+
+        form.reset();
+
+
+        previewImagem.src =
+            "";
+
+
+        previewContainer.style.display =
+            "none";
+
+
+        /* =================================
+           5. ATUALIZAR LISTA
+        ================================= */
+
+        await carregarPratos();
+
+
+        alert(
+            "Prato adicionado com sucesso!"
+        );
 
     }
-);
+
+    catch (erro) {
+
+        console.error(
+            "ERRO:",
+            erro
+        );
+
+
+        alert(
+
+            "Não foi possível adicionar o prato.\n\n" +
+            erro.message
+
+        );
+
+    }
+
+    finally {
+
+        botaoAdicionar.disabled =
+            false;
+
+
+        botaoAdicionar.textContent =
+            "+ Adicionar prato";
+
+    }
 
 }
+```
 
-/* =========================================
-INICIAR
-========================================= */
-
-carregarPratos();
-
+);
 
 /* =========================================
 INICIAR
