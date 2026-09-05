@@ -160,14 +160,154 @@ function mostrarPratos(pratos) {
                         .replace(".", ",")}
                 </span>
 
+
+                <!-- BOTÃO EXCLUIR -->
+
+                <button
+                    class="botao-excluir"
+                    type="button"
+                >
+                    🗑️ Excluir prato
+                </button>
+
             </div>
 
         `;
 
 
+        /* =====================================
+           EVENTO DO BOTÃO EXCLUIR
+        ===================================== */
+
+        const botaoExcluir =
+            card.querySelector(".botao-excluir");
+
+
+        botaoExcluir.addEventListener(
+            "click",
+
+            function () {
+
+                excluirPrato(
+                    prato.id,
+                    prato.nome
+                );
+
+            }
+
+        );
+
+
         listaPratos.appendChild(card);
 
     });
+
+}
+
+
+/* =========================================
+   EXCLUIR PRATO
+========================================= */
+
+async function excluirPrato(id, nome) {
+
+    const confirmar =
+        confirm(
+            `Tem certeza que deseja excluir "${nome}"?`
+        );
+
+
+    if (!confirmar) {
+
+        return;
+
+    }
+
+
+    try {
+
+        console.log(
+            "Excluindo prato:",
+            id
+        );
+
+
+        const resposta =
+            await fetch(
+
+                `${SUPABASE_URL}/rest/v1/prato?id=eq.${id}`,
+
+                {
+
+                    method: "DELETE",
+
+                    headers: {
+
+                        "apikey":
+                            SUPABASE_KEY,
+
+                        "Authorization":
+                            `Bearer ${SUPABASE_KEY}`,
+
+                        "Prefer":
+                            "return=representation"
+
+                    }
+
+                }
+
+            );
+
+
+        if (!resposta.ok) {
+
+            const erro =
+                await resposta.text();
+
+
+            throw new Error(
+
+                `Erro ao excluir (${resposta.status}): ${erro}`
+
+            );
+
+        }
+
+
+        console.log(
+            "Prato excluído com sucesso!"
+        );
+
+
+        alert(
+            `"${nome}" foi excluído com sucesso!`
+        );
+
+
+        /* =====================================
+           ATUALIZAR LISTA
+        ===================================== */
+
+        await carregarPratos();
+
+    }
+
+    catch (erro) {
+
+        console.error(
+            "Erro ao excluir prato:",
+            erro
+        );
+
+
+        alert(
+
+            "Não foi possível excluir o prato.\n\n" +
+            erro.message
+
+        );
+
+    }
 
 }
 
