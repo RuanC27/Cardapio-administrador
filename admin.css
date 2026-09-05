@@ -192,7 +192,7 @@ select:focus {
 
 
 /* =========================================
-   BOTÃO
+   BOTÃO ADICIONAR
 ========================================= */
 
 #botaoAdicionar {
@@ -220,6 +220,14 @@ select:focus {
 #botaoAdicionar:hover {
 
     background: #000;
+
+}
+
+#botaoAdicionar:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
 
 }
 
@@ -327,6 +335,57 @@ select:focus {
 
     font-weight: bold;
 
+    margin-bottom: 15px;
+
+}
+
+
+/* =========================================
+   BOTÃO EXCLUIR
+========================================= */
+
+.botao-excluir {
+
+    width: 100%;
+
+    border: none;
+
+    border-radius: 8px;
+
+    padding: 11px;
+
+    background: #dc3545;
+
+    color: white;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+.botao-excluir:hover {
+
+    opacity: 0.85;
+
+    transform: translateY(-1px);
+
+}
+
+.botao-excluir:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none;
+
 }
 
 
@@ -345,40 +404,6 @@ select:focus {
 }
 
 
-/* =========================================
-   MOBILE
-========================================= */
-
-@media (max-width: 700px) {
-
-    main {
-
-        width: 94%;
-
-        margin: 25px auto;
-
-    }
-
-    .painel {
-
-        padding: 20px;
-
-    }
-
-    #formPrato {
-
-        grid-template-columns: 1fr;
-
-    }
-
-    .campo-grande,
-    #botaoAdicionar {
-
-        grid-column: span 1;
-
-    }
-
-}
 /* =========================================
    UPLOAD DE IMAGEM
 ========================================= */
@@ -416,5 +441,41 @@ select:focus {
     height: 100%;
 
     object-fit: cover;
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 700px) {
+
+    main {
+
+        width: 94%;
+
+        margin: 25px auto;
+
+    }
+
+    .painel {
+
+        padding: 20px;
+
+    }
+
+    #formPrato {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .campo-grande,
+    #botaoAdicionar {
+
+        grid-column: span 1;
+
+    }
 
 }
