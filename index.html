@@ -4,7 +4,7 @@
 
 <head>
 
-```
+
 <meta charset="UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,13 +12,13 @@
 <title>Administração do Cardápio</title>
 
 <link rel="stylesheet" href="admin.css">
-```
+
 
 </head>
 
 <body>
 
-```
+
 <header class="topo">
 
     <div>
@@ -70,19 +70,106 @@
             </div>
 
 
+            <!-- =====================================
+                 PREÇO NORMAL
+            ====================================== -->
+
             <div class="campo">
 
                 <label for="preco">
-                    Preço
+                    Preço normal
                 </label>
 
                 <input
                     type="number"
                     id="preco"
-                    placeholder="25.90"
+                    placeholder="Ex: 25.90"
                     step="0.01"
                     min="0"
-                    required
+                >
+
+            </div>
+
+
+            <!-- =====================================
+                 QUANTIDADE
+            ====================================== -->
+
+            <div class="campo">
+
+                <label for="quantidade">
+                    Quantidade disponível
+                </label>
+
+                <input
+                    type="number"
+                    id="quantidade"
+                    placeholder="Ex: 10"
+                    min="0"
+                    step="1"
+                >
+
+            </div>
+
+
+            <!-- =====================================
+                 PREÇO PEQUENO
+            ====================================== -->
+
+            <div class="campo">
+
+                <label for="preco_pequeno">
+                    Preço pequeno
+                </label>
+
+                <input
+                    type="number"
+                    id="preco_pequeno"
+                    placeholder="Ex: 15.00"
+                    step="0.01"
+                    min="0"
+                >
+
+            </div>
+
+
+            <!-- =====================================
+                 PREÇO MÉDIO
+            ====================================== -->
+
+            <div class="campo">
+
+                <label for="preco_medio">
+                    Preço médio
+                </label>
+
+                <input
+                    type="number"
+                    id="preco_medio"
+                    placeholder="Ex: 20.00"
+                    step="0.01"
+                    min="0"
+                >
+
+            </div>
+
+
+            <!-- =====================================
+                 PREÇO GRANDE
+            ====================================== -->
+
+            <div class="campo">
+
+                <label for="preco_grande">
+                    Preço grande
+                </label>
+
+                <input
+                    type="number"
+                    id="preco_grande"
+                    placeholder="Ex: 25.00"
+                    step="0.01"
+                    min="0"
                 >
 
             </div>
@@ -212,7 +299,6 @@
 
 
 <script src="admin.js"></script>
-```
 
 </body>
 
