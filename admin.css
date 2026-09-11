@@ -66,6 +66,23 @@ main {
 
 
 /* =========================================
+   ÁREA DE CADASTROS
+========================================= */
+
+.painel-cadastros {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 25px;
+
+    align-items: start;
+
+}
+
+
+/* =========================================
    PAINEL
 ========================================= */
 
@@ -111,11 +128,13 @@ main {
 
     font-size: 14px;
 
+    line-height: 1.5;
+
 }
 
 
 /* =========================================
-   FORMULÁRIO
+   FORMULÁRIO DO PRATO
 ========================================= */
 
 #formPrato {
@@ -127,6 +146,26 @@ main {
     gap: 18px;
 
 }
+
+
+/* =========================================
+   FORMULÁRIO DE ALERGIA
+========================================= */
+
+#formAlergia {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+
+}
+
+
+/* =========================================
+   CAMPOS
+========================================= */
 
 .campo {
 
@@ -151,6 +190,11 @@ main {
     font-weight: 600;
 
 }
+
+
+/* =========================================
+   INPUTS
+========================================= */
 
 input,
 textarea,
@@ -192,7 +236,7 @@ select:focus {
 
 
 /* =========================================
-   BOTÃO ADICIONAR
+   BOTÃO ADICIONAR PRATO
 ========================================= */
 
 #botaoAdicionar {
@@ -233,7 +277,300 @@ select:focus {
 
 
 /* =========================================
-   LISTA
+   BOTÃO ADICIONAR ALERGIA
+========================================= */
+
+#botaoAdicionarAlergia {
+
+    width: 100%;
+
+    height: 45px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #1f1f1f;
+
+    color: white;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        opacity 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+#botaoAdicionarAlergia:hover {
+
+    background: #000;
+
+    transform: translateY(-1px);
+
+}
+
+#botaoAdicionarAlergia:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+}
+
+
+/* =========================================
+   UPLOAD DO PRATO
+========================================= */
+
+#imagem {
+
+    cursor: pointer;
+
+}
+
+
+/* =========================================
+   PRÉVIA DA IMAGEM DO PRATO
+========================================= */
+
+#previewContainer {
+
+    display: none;
+
+    width: 100%;
+
+    height: 250px;
+
+    margin-top: 10px;
+
+    border: 2px dashed #d8d8d8;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background: #f5f5f5;
+
+}
+
+#previewImagem {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+}
+
+
+/* =========================================
+   UPLOAD DA ALERGIA
+========================================= */
+
+#imagemAlergia {
+
+    cursor: pointer;
+
+}
+
+
+/* =========================================
+   PRÉVIA DA IMAGEM DA ALERGIA
+========================================= */
+
+#previewAlergiaContainer {
+
+    display: none;
+
+    width: 100%;
+
+    height: 150px;
+
+    margin-top: -5px;
+
+    border: 2px dashed #d8d8d8;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background: #f5f5f5;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+#previewImagemAlergia {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: contain;
+
+}
+
+
+/* =========================================
+   LISTA DE ALERGIAS
+========================================= */
+
+.lista-alergias-container {
+
+    margin-top: 30px;
+
+    padding-top: 25px;
+
+    border-top: 1px solid #eeeeee;
+
+}
+
+.lista-alergias-container h3 {
+
+    font-size: 16px;
+
+    margin-bottom: 15px;
+
+}
+
+
+/* =========================================
+   GRID DAS ALERGIAS
+========================================= */
+
+#listaAlergias {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fill,
+            minmax(110px, 1fr)
+        );
+
+    gap: 10px;
+
+}
+
+
+/* =========================================
+   CARD DA ALERGIA
+========================================= */
+
+.alergia {
+
+    border: 1px solid #e5e5e5;
+
+    border-radius: 10px;
+
+    padding: 10px;
+
+    background: #fafafa;
+
+    text-align: center;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+.alergia:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.08);
+
+}
+
+
+/* =========================================
+   IMAGEM DA ALERGIA
+========================================= */
+
+.alergia-imagem {
+
+    width: 60px;
+
+    height: 60px;
+
+    object-fit: contain;
+
+    display: block;
+
+    margin: 0 auto 8px;
+
+}
+
+
+/* =========================================
+   NOME DA ALERGIA
+========================================= */
+
+.alergia-nome {
+
+    display: block;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    line-height: 1.3;
+
+    word-break: break-word;
+
+}
+
+
+/* =========================================
+   BOTÃO EXCLUIR ALERGIA
+========================================= */
+
+.botao-excluir-alergia {
+
+    width: 100%;
+
+    margin-top: 9px;
+
+    border: none;
+
+    border-radius: 6px;
+
+    padding: 7px 5px;
+
+    background: #dc3545;
+
+    color: white;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+}
+
+.botao-excluir-alergia:hover {
+
+    opacity: 0.85;
+
+}
+
+
+/* =========================================
+   LISTA DE PRATOS
 ========================================= */
 
 #listaPratos {
@@ -252,7 +589,7 @@ select:focus {
 
 
 /* =========================================
-   CARD
+   CARD DO PRATO
 ========================================= */
 
 .prato {
@@ -341,7 +678,7 @@ select:focus {
 
 
 /* =========================================
-   BOTÃO EXCLUIR
+   BOTÃO EXCLUIR PRATO
 ========================================= */
 
 .botao-excluir {
@@ -405,49 +742,19 @@ select:focus {
 
 
 /* =========================================
-   UPLOAD DE IMAGEM
-========================================= */
-
-#imagem {
-
-    cursor: pointer;
-
-}
-
-#previewContainer {
-
-    display: none;
-
-    width: 100%;
-
-    height: 250px;
-
-    margin-top: 10px;
-
-    border: 2px dashed #d8d8d8;
-
-    border-radius: 10px;
-
-    overflow: hidden;
-
-    background: #f5f5f5;
-
-}
-
-#previewImagem {
-
-    width: 100%;
-
-    height: 100%;
-
-    object-fit: cover;
-
-}
-
-
-/* =========================================
    MOBILE
 ========================================= */
+
+@media (max-width: 900px) {
+
+    .painel-cadastros {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}
+
 
 @media (max-width: 700px) {
 
@@ -475,6 +782,16 @@ select:focus {
     #botaoAdicionar {
 
         grid-column: span 1;
+
+    }
+
+    #listaAlergias {
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
 
     }
 
