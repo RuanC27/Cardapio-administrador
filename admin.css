@@ -423,6 +423,162 @@ select:focus {
 
 
 /* =========================================
+   SELEÇÃO DE ALERGIAS DO PRATO
+========================================= */
+
+.selecao-alergias {
+
+    padding-top: 5px;
+
+}
+
+.descricao-alergias {
+
+    color: #777;
+
+    font-size: 13px;
+
+    line-height: 1.4;
+
+    margin-top: -2px;
+
+}
+
+
+/* =========================================
+   GRID DE ALERGIAS PARA O PRATO
+========================================= */
+
+#listaAlergiasPrato {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fill,
+            minmax(120px, 1fr)
+        );
+
+    gap: 10px;
+
+    margin-top: 5px;
+
+}
+
+
+/* =========================================
+   OPÇÃO DE ALERGIA DO PRATO
+========================================= */
+
+.alergia-opcao {
+
+    position: relative;
+
+    border: 1px solid #e2e2e2;
+
+    border-radius: 10px;
+
+    padding: 10px;
+
+    background: #fafafa;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+/* =========================================
+   CHECKBOX DA ALERGIA
+========================================= */
+
+.alergia-opcao input[type="checkbox"] {
+
+    position: absolute;
+
+    top: 9px;
+
+    right: 9px;
+
+    width: 17px;
+
+    height: 17px;
+
+    margin: 0;
+
+    padding: 0;
+
+    cursor: pointer;
+
+    accent-color: #1f1f1f;
+
+}
+
+
+/* =========================================
+   ALERGIA SELECIONADA
+========================================= */
+
+.alergia-opcao:has(input[type="checkbox"]:checked) {
+
+    border-color: #1f1f1f;
+
+    background: #f0f0f0;
+
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.08);
+
+}
+
+
+/* =========================================
+   IMAGEM DA ALERGIA NA SELEÇÃO
+========================================= */
+
+.alergia-opcao-imagem {
+
+    width: 55px;
+
+    height: 55px;
+
+    object-fit: contain;
+
+    display: block;
+
+    margin: 0 auto 7px;
+
+}
+
+
+/* =========================================
+   NOME DA ALERGIA NA SELEÇÃO
+========================================= */
+
+.alergia-opcao-nome {
+
+    display: block;
+
+    text-align: center;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    line-height: 1.3;
+
+    word-break: break-word;
+
+    padding-right: 12px;
+
+}
+
+
+/* =========================================
    LISTA DE ALERGIAS
 ========================================= */
 
@@ -786,6 +942,16 @@ select:focus {
     }
 
     #listaAlergias {
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
+
+    }
+
+    #listaAlergiasPrato {
 
         grid-template-columns:
             repeat(
