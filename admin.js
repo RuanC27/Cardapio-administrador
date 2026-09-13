@@ -47,6 +47,14 @@ const previewImagemAlergia =
 
 
 /* =========================================
+   ELEMENTOS - ALERGIAS DO PRATO
+========================================= */
+
+const listaAlergiasPrato =
+    document.getElementById("listaAlergiasPrato");
+
+
+/* =========================================
    CARREGAR PRATOS
 ========================================= */
 
@@ -191,15 +199,15 @@ function mostrarPratos(pratos) {
                     preco !== null
                         ? `
 
-                    <span class="prato-preco">
+                        <span class="prato-preco">
 
-                        R$ ${preco
-                            .toFixed(2)
-                            .replace(".", ",")}
+                            R$ ${preco
+                                .toFixed(2)
+                                .replace(".", ",")}
 
-                    </span>
+                        </span>
 
-                    `
+                        `
                         : ""
                 }
 
@@ -209,14 +217,14 @@ function mostrarPratos(pratos) {
                     prato.quantidade !== undefined
                         ? `
 
-                    <p class="prato-quantidade">
+                        <p class="prato-quantidade">
 
-                        Quantidade disponível:
-                        ${prato.quantidade}
+                            Quantidade disponível:
+                            ${prato.quantidade}
 
-                    </p>
+                        </p>
 
-                    `
+                        `
                         : ""
                 }
 
@@ -227,66 +235,66 @@ function mostrarPratos(pratos) {
                     prato.preco_grande !== null
                         ? `
 
-                    <div class="precos-tamanho">
+                        <div class="precos-tamanho">
 
-                        <strong>
-                            Preços por tamanho:
-                        </strong>
-
-
-                        ${
-                            prato.preco_pequeno !== null &&
-                            prato.preco_pequeno !== undefined
-                                ? `
-
-                            <span>
-                                Pequeno:
-                                R$ ${Number(prato.preco_pequeno)
-                                    .toFixed(2)
-                                    .replace(".", ",")}
-                            </span>
-
-                            `
-                                : ""
-                        }
+                            <strong>
+                                Preços por tamanho:
+                            </strong>
 
 
-                        ${
-                            prato.preco_medio !== null &&
-                            prato.preco_medio !== undefined
-                                ? `
+                            ${
+                                prato.preco_pequeno !== null &&
+                                prato.preco_pequeno !== undefined
+                                    ? `
 
-                            <span>
-                                Médio:
-                                R$ ${Number(prato.preco_medio)
-                                    .toFixed(2)
-                                    .replace(".", ",")}
-                            </span>
+                                    <span>
+                                        Pequeno:
+                                        R$ ${Number(prato.preco_pequeno)
+                                            .toFixed(2)
+                                            .replace(".", ",")}
+                                    </span>
 
-                            `
-                                : ""
-                        }
+                                    `
+                                    : ""
+                            }
 
 
-                        ${
-                            prato.preco_grande !== null &&
-                            prato.preco_grande !== undefined
-                                ? `
+                            ${
+                                prato.preco_medio !== null &&
+                                prato.preco_medio !== undefined
+                                    ? `
 
-                            <span>
-                                Grande:
-                                R$ ${Number(prato.preco_grande)
-                                    .toFixed(2)
-                                    .replace(".", ",")}
-                            </span>
+                                    <span>
+                                        Médio:
+                                        R$ ${Number(prato.preco_medio)
+                                            .toFixed(2)
+                                            .replace(".", ",")}
+                                    </span>
 
-                            `
-                                : ""
-                        }
+                                    `
+                                    : ""
+                            }
 
-                    </div>
 
-                    `
+                            ${
+                                prato.preco_grande !== null &&
+                                prato.preco_grande !== undefined
+                                    ? `
+
+                                    <span>
+                                        Grande:
+                                        R$ ${Number(prato.preco_grande)
+                                            .toFixed(2)
+                                            .replace(".", ",")}
+                                    </span>
+
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+
+                        `
                         : ""
                 }
 
@@ -522,6 +530,273 @@ async function enviarImagem(arquivo) {
         `${SUPABASE_URL}` +
         `/storage/v1/object/public/` +
         `${BUCKET}/${caminho}`
+    );
+
+}
+
+
+/* =========================================
+   CARREGAR ALERGIAS PARA O PRATO
+========================================= */
+
+async function carregarAlergiasParaPrato() {
+
+    if (!listaAlergiasPrato) {
+
+        console.warn(
+            "Elemento listaAlergiasPrato não encontrado."
+        );
+
+        return;
+
+    }
+
+
+    listaAlergiasPrato.innerHTML =
+        `<p class="carregando">
+            Carregando alergias...
+        </p>`;
+
+
+    try {
+
+        const resposta =
+            await fetch(
+
+                `${SUPABASE_URL}/rest/v1/alergia?select=*&order=id.asc`,
+
+                {
+
+                    method: "GET",
+
+                    headers: {
+
+                        "apikey":
+                            SUPABASE_KEY,
+
+                        "Authorization":
+                            `Bearer ${SUPABASE_KEY}`
+
+                    }
+
+                }
+
+            );
+
+
+        if (!resposta.ok) {
+
+            const erro =
+                await resposta.text();
+
+
+            throw new Error(
+                `Erro ${resposta.status}: ${erro}`
+            );
+
+        }
+
+
+        const alergias =
+            await resposta.json();
+
+
+        console.log(
+            "Alergias disponíveis para o prato:",
+            alergias
+        );
+
+
+        mostrarAlergiasParaPrato(alergias);
+
+    }
+
+    catch (erro) {
+
+        console.error(
+            "Erro ao carregar alergias para o prato:",
+            erro
+        );
+
+
+        listaAlergiasPrato.innerHTML =
+            `<p>
+                Erro ao carregar as alergias.
+            </p>`;
+
+    }
+
+}
+
+
+/* =========================================
+   MOSTRAR ALERGIAS PARA O PRATO
+========================================= */
+
+function mostrarAlergiasParaPrato(alergias) {
+
+    listaAlergiasPrato.innerHTML = "";
+
+
+    if (!alergias.length) {
+
+        listaAlergiasPrato.innerHTML =
+            `<p>
+                Nenhuma alergia cadastrada.
+            </p>`;
+
+        return;
+
+    }
+
+
+    alergias.forEach(alergia => {
+
+        const opcao =
+            document.createElement("label");
+
+
+        opcao.className =
+            "alergia-opcao";
+
+
+        const imagem =
+            alergia.imagem ||
+            "https://via.placeholder.com/100?text=Sem+imagem";
+
+
+        opcao.innerHTML = `
+
+            <input
+                type="checkbox"
+                name="alergiasPrato"
+                value="${alergia.id}"
+            >
+
+            <img
+                class="alergia-opcao-imagem"
+                src="${imagem}"
+                alt="${alergia.nome || "Alergia"}"
+            >
+
+            <span class="alergia-opcao-nome">
+                ${alergia.nome || "Sem nome"}
+            </span>
+
+        `;
+
+
+        listaAlergiasPrato.appendChild(opcao);
+
+    });
+
+}
+
+
+/* =========================================
+   SALVAR ALERGIAS DO PRATO
+========================================= */
+
+async function salvarAlergiasDoPrato(pratoId) {
+
+    const checkboxes =
+        document.querySelectorAll(
+            'input[name="alergiasPrato"]:checked'
+        );
+
+
+    const alergiasSelecionadas =
+        Array.from(checkboxes)
+            .map(checkbox =>
+                Number(checkbox.value)
+            );
+
+
+    console.log(
+        "Alergias selecionadas:",
+        alergiasSelecionadas
+    );
+
+
+    if (!alergiasSelecionadas.length) {
+
+        console.log(
+            "Nenhuma alergia selecionada para este prato."
+        );
+
+        return;
+
+    }
+
+
+    const relacoes =
+        alergiasSelecionadas.map(
+            alergiaId => ({
+
+                prato_id:
+                    Number(pratoId),
+
+                alergia_id:
+                    Number(alergiaId)
+
+            })
+        );
+
+
+    console.log(
+        "Relações prato_alergia:",
+        relacoes
+    );
+
+
+    const resposta =
+        await fetch(
+
+            `${SUPABASE_URL}/rest/v1/prato_alergia`,
+
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "apikey":
+                        SUPABASE_KEY,
+
+                    "Authorization":
+                        `Bearer ${SUPABASE_KEY}`,
+
+                    "Content-Type":
+                        "application/json",
+
+                    "Prefer":
+                        "return=minimal"
+
+                },
+
+                body:
+                    JSON.stringify(relacoes)
+
+            }
+
+        );
+
+
+    if (!resposta.ok) {
+
+        const erro =
+            await resposta.text();
+
+
+        throw new Error(
+            `Erro ao salvar as alergias do prato (${resposta.status}): ${erro}`
+        );
+
+    }
+
+
+    console.log(
+        "Alergias do prato salvas com sucesso!"
     );
 
 }
@@ -920,17 +1195,66 @@ form.addEventListener(
             );
 
 
+            /* =====================================
+               PEGAR ID DO PRATO CRIADO
+            ===================================== */
+
+            const pratoCriado =
+                Array.isArray(pratoSalvo)
+                    ? pratoSalvo[0]
+                    : pratoSalvo;
+
+
+            if (
+                !pratoCriado ||
+                !pratoCriado.id
+            ) {
+
+                throw new Error(
+                    "O prato foi salvo, mas o ID não foi retornado pelo Supabase."
+                );
+
+            }
+
+
+            const pratoId =
+                pratoCriado.id;
+
+
+            console.log(
+                "ID do novo prato:",
+                pratoId
+            );
+
+
+            /* =====================================
+               SALVAR ALERGIAS DO PRATO
+            ===================================== */
+
+            botaoAdicionar.textContent =
+                "Salvando alergias...";
+
+
+            await salvarAlergiasDoPrato(
+                pratoId
+            );
+
+
             alert(
                 "Prato adicionado com sucesso!"
             );
 
 
-            /* LIMPAR FORMULÁRIO */
+            /* =====================================
+               LIMPAR FORMULÁRIO
+            ===================================== */
 
             form.reset();
 
 
-            /* ATUALIZAR LISTA */
+            /* =====================================
+               ATUALIZAR LISTA
+            ===================================== */
 
             await carregarPratos();
 
@@ -1102,6 +1426,14 @@ async function carregarAlergias() {
 
         mostrarAlergias(alergias);
 
+
+        /*
+         * Atualiza também a seleção de alergias
+         * disponível no formulário de pratos.
+         */
+
+        mostrarAlergiasParaPrato(alergias);
+
     }
 
     catch (erro) {
@@ -1116,6 +1448,16 @@ async function carregarAlergias() {
             `<p>
                 Erro ao carregar as alergias.
             </p>`;
+
+
+        if (listaAlergiasPrato) {
+
+            listaAlergiasPrato.innerHTML =
+                `<p>
+                    Erro ao carregar as alergias.
+                </p>`;
+
+        }
 
     }
 
@@ -1545,7 +1887,9 @@ formAlergia.addEventListener(
             );
 
 
-            /* LIMPAR FORMULÁRIO */
+            /* =====================================
+               LIMPAR FORMULÁRIO
+            ===================================== */
 
             formAlergia.reset();
 
@@ -1558,7 +1902,9 @@ formAlergia.addEventListener(
                 "";
 
 
-            /* ATUALIZAR LISTA */
+            /* =====================================
+               ATUALIZAR LISTAS
+            ===================================== */
 
             await carregarAlergias();
 
