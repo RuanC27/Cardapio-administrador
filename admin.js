@@ -55,7 +55,7 @@ const listaAlergiasPrato =
 
 
 /* =========================================
-   CARREGAR PRATOS
+   CARREGAR PRATOS + ALERGIAS
 ========================================= */
 
 async function carregarPratos() {
@@ -67,7 +67,11 @@ async function carregarPratos() {
 
     try {
 
-        const resposta = await fetch(
+        /* =====================================
+           BUSCAR PRATOS
+        ===================================== */
+
+        const respostaPratos = await fetch(
 
             `${SUPABASE_URL}/rest/v1/prato?select=*&order=id.asc`,
 
@@ -85,20 +89,20 @@ async function carregarPratos() {
         );
 
 
-        if (!resposta.ok) {
+        if (!respostaPratos.ok) {
 
             const erro =
-                await resposta.text();
+                await respostaPratos.text();
 
             throw new Error(
-                `Erro ${resposta.status}: ${erro}`
+                `Erro ao carregar pratos (${respostaPratos.status}): ${erro}`
             );
 
         }
 
 
         const pratos =
-            await resposta.json();
+            await respostaPratos.json();
 
 
         console.log(
@@ -107,7 +111,136 @@ async function carregarPratos() {
         );
 
 
-        mostrarPratos(pratos);
+        /* =====================================
+           BUSCAR RELAÇÕES PRATO ↔ ALERGIA
+        ===================================== */
+
+        const respostaRelacoes = await fetch(
+
+            `${SUPABASE_URL}/rest/v1/prato_alergia?select=*`,
+
+            {
+                method: "GET",
+
+                headers: {
+                    "apikey": SUPABASE_KEY,
+
+                    "Authorization":
+                        `Bearer ${SUPABASE_KEY}`
+                }
+            }
+
+        );
+
+
+        if (!respostaRelacoes.ok) {
+
+            const erro =
+                await respostaRelacoes.text();
+
+            throw new Error(
+                `Erro ao carregar relações de alergias (${respostaRelacoes.status}): ${erro}`
+            );
+
+        }
+
+
+        const relacoes =
+            await respostaRelacoes.json();
+
+
+        console.log(
+            "Relações prato_alergia:",
+            relacoes
+        );
+
+
+        /* =====================================
+           BUSCAR ALERGIAS
+        ===================================== */
+
+        const respostaAlergias = await fetch(
+
+            `${SUPABASE_URL}/rest/v1/alergia?select=*&order=id.asc`,
+
+            {
+                method: "GET",
+
+                headers: {
+                    "apikey": SUPABASE_KEY,
+
+                    "Authorization":
+                        `Bearer ${SUPABASE_KEY}`
+                }
+            }
+
+        );
+
+
+        if (!respostaAlergias.ok) {
+
+            const erro =
+                await respostaAlergias.text();
+
+            throw new Error(
+                `Erro ao carregar alergias (${respostaAlergias.status}): ${erro}`
+            );
+
+        }
+
+
+        const alergias =
+            await respostaAlergias.json();
+
+
+        console.log(
+            "Alergias encontradas:",
+            alergias
+        );
+
+
+        /* =====================================
+           JUNTAR AS INFORMAÇÕES
+        ===================================== */
+
+        const pratosComAlergias =
+            pratos.map(prato => {
+
+                const relacoesDoPrato =
+                    relacoes.filter(
+                        relacao =>
+                            Number(relacao.prato_id) ===
+                            Number(prato.id)
+                    );
+
+
+                const alergiasDoPrato =
+                    relacoesDoPrato
+                        .map(relacao =>
+                            alergias.find(
+                                alergia =>
+                                    Number(alergia.id) ===
+                                    Number(relacao.alergia_id)
+                            )
+                        )
+                        .filter(Boolean);
+
+
+                return {
+                    ...prato,
+                    alergias: alergiasDoPrato
+                };
+
+            });
+
+
+        console.log(
+            "Pratos com suas alergias:",
+            pratosComAlergias
+        );
+
+
+        mostrarPratos(pratosComAlergias);
 
     }
 
@@ -127,7 +260,6 @@ async function carregarPratos() {
     }
 
 }
-
 
 /* =========================================
    MOSTRAR PRATOS
@@ -229,73 +361,62 @@ function mostrarPratos(pratos) {
                 }
 
 
-                ${
-                    prato.preco_pequeno !== null ||
-                    prato.preco_medio !== null ||
-                    prato.preco_grande !== null
+                               ${
+                    prato.alergias &&
+                    prato.alergias.length
                         ? `
+                            <div class="prato-alergias">
 
-                        <div class="precos-tamanho">
+                                <strong>
+                                    ⚠️ Alergias:
+                                </strong>
 
-                            <strong>
-                                Preços por tamanho:
-                            </strong>
+                                <div class="prato-alergias-lista">
 
+                                    ${prato.alergias.map(alergia => `
 
-                            ${
-                                prato.preco_pequeno !== null &&
-                                prato.preco_pequeno !== undefined
-                                    ? `
+                                        <div class="prato-alergia">
 
-                                    <span>
-                                        Pequeno:
-                                        R$ ${Number(prato.preco_pequeno)
-                                            .toFixed(2)
-                                            .replace(".", ",")}
-                                    </span>
+                                            <img
+                                                src="${
+                                                    alergia.imagem ||
+                                                    "https://via.placeholder.com/60?text=Alergia"
+                                                }"
+                                                alt="${
+                                                    alergia.nome ||
+                                                    "Alergia"
+                                                }"
+                                                class="prato-alergia-imagem"
+                                            >
 
-                                    `
-                                    : ""
-                            }
+                                            <span>
+                                                ${
+                                                    alergia.nome ||
+                                                    "Sem nome"
+                                                }
+                                            </span>
 
+                                        </div>
 
-                            ${
-                                prato.preco_medio !== null &&
-                                prato.preco_medio !== undefined
-                                    ? `
+                                    `).join("")}
 
-                                    <span>
-                                        Médio:
-                                        R$ ${Number(prato.preco_medio)
-                                            .toFixed(2)
-                                            .replace(".", ",")}
-                                    </span>
+                                </div>
 
-                                    `
-                                    : ""
-                            }
-
-
-                            ${
-                                prato.preco_grande !== null &&
-                                prato.preco_grande !== undefined
-                                    ? `
-
-                                    <span>
-                                        Grande:
-                                        R$ ${Number(prato.preco_grande)
-                                            .toFixed(2)
-                                            .replace(".", ",")}
-                                    </span>
-
-                                    `
-                                    : ""
-                            }
-
-                        </div>
-
+                            </div>
                         `
-                        : ""
+                        : `
+                            <div class="prato-alergias sem-alergias">
+
+                                <strong>
+                                    ⚠️ Alergias:
+                                </strong>
+
+                                <span>
+                                    Nenhuma alergia cadastrada
+                                </span>
+
+                            </div>
+                        `
                 }
 
 
