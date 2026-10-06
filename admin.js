@@ -24,6 +24,13 @@ const inputImagem =
 
 
 /* =========================================
+   ESTADO DE EDIÇÃO
+========================================= */
+
+let pratoEmEdicao = null;
+
+
+/* =========================================
    ELEMENTOS - ALERGIAS
 ========================================= */
 
@@ -261,6 +268,7 @@ async function carregarPratos() {
 
 }
 
+
 /* =========================================
    MOSTRAR PRATOS
 ========================================= */
@@ -361,10 +369,11 @@ function mostrarPratos(pratos) {
                 }
 
 
-                               ${
+                ${
                     prato.alergias &&
                     prato.alergias.length
                         ? `
+
                             <div class="prato-alergias">
 
                                 <strong>
@@ -420,6 +429,16 @@ function mostrarPratos(pratos) {
                 }
 
 
+                <!-- BOTÃO EDITAR -->
+
+                <button
+                    class="botao-editar"
+                    type="button"
+                >
+                    ✏️ Editar prato
+                </button>
+
+
                 <!-- BOTÃO EXCLUIR -->
 
                 <button
@@ -432,6 +451,26 @@ function mostrarPratos(pratos) {
             </div>
 
         `;
+
+
+        /* =====================================
+           EVENTO DO BOTÃO EDITAR
+        ===================================== */
+
+        const botaoEditar =
+            card.querySelector(".botao-editar");
+
+
+        botaoEditar.addEventListener(
+            "click",
+
+            function () {
+
+                editarPrato(prato);
+
+            }
+
+        );
 
 
         /* =====================================
@@ -465,10 +504,452 @@ function mostrarPratos(pratos) {
 
 
 /* =========================================
+   EDITAR PRATO
+========================================= */
+
+function editarPrato(prato) {
+
+    pratoEmEdicao = prato;
+
+    console.log(
+        "Editando prato:",
+        prato
+    );
+
+
+    document.getElementById("nome").value =
+        prato.nome || "";
+
+
+    document.getElementById("descricao").value =
+        prato.descricao || "";
+
+
+    document.getElementById("categoria").value =
+        prato.categoria || "";
+
+
+    document.getElementById("preco").value =
+        prato.preco !== null &&
+        prato.preco !== undefined
+            ? prato.preco
+            : "";
+
+
+    document.getElementById("quantidade").value =
+        prato.quantidade !== null &&
+        prato.quantidade !== undefined
+            ? prato.quantidade
+            : "";
+
+
+    document.getElementById("preco_pequeno").value =
+        prato.preco_pequeno !== null &&
+        prato.preco_pequeno !== undefined
+            ? prato.preco_pequeno
+            : "";
+
+
+    document.getElementById("preco_medio").value =
+        prato.preco_medio !== null &&
+        prato.preco_medio !== undefined
+            ? prato.preco_medio
+            : "";
+
+
+    document.getElementById("preco_grande").value =
+        prato.preco_grande !== null &&
+        prato.preco_grande !== undefined
+            ? prato.preco_grande
+            : "";
+
+
+    const previewContainer =
+        document.getElementById(
+            "previewContainer"
+        );
+
+
+    const previewImagem =
+        document.getElementById(
+            "previewImagem"
+        );
+
+
+    if (prato.imagem) {
+
+        previewImagem.src =
+            prato.imagem;
+
+        previewContainer.style.display =
+            "block";
+
+    }
+
+
+    /*
+     * Selecionar os alergênicos
+     * que já pertencem ao prato.
+     */
+
+    document
+        .querySelectorAll(
+            'input[name="alergiasPrato"]'
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.checked =
+                    Array.isArray(
+                        prato.alergias
+                    ) &&
+                    prato.alergias.some(
+                        alergia =>
+                            Number(alergia.id) ===
+                            Number(checkbox.value)
+                    );
+
+            }
+        );
+
+
+    botaoAdicionar.textContent =
+        "💾 Salvar alterações";
+
+
+    let botaoCancelar =
+        document.getElementById(
+            "botaoCancelarEdicao"
+        );
+
+
+    if (!botaoCancelar) {
+
+        botaoCancelar =
+            document.createElement(
+                "button"
+            );
+
+
+        botaoCancelar.id =
+            "botaoCancelarEdicao";
+
+
+        botaoCancelar.type =
+            "button";
+
+
+        botaoCancelar.textContent =
+            "✖ Cancelar edição";
+
+
+        botaoAdicionar.insertAdjacentElement(
+            "afterend",
+            botaoCancelar
+        );
+
+
+        botaoCancelar.addEventListener(
+            "click",
+            cancelarEdicao
+        );
+
+    }
+
+
+    form.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+
+}
+
+
+function cancelarEdicao() {
+
+    pratoEmEdicao = null;
+
+
+    form.reset();
+
+
+    botaoAdicionar.textContent =
+        "+ Adicionar prato";
+
+
+    const botaoCancelar =
+        document.getElementById(
+            "botaoCancelarEdicao"
+        );
+
+
+    if (botaoCancelar) {
+
+        botaoCancelar.remove();
+
+    }
+
+
+    const previewContainer =
+        document.getElementById(
+            "previewContainer"
+        );
+
+
+    const previewImagem =
+        document.getElementById(
+            "previewImagem"
+        );
+
+
+    if (previewContainer) {
+
+        previewContainer.style.display =
+            "none";
+
+    }
+
+
+    if (previewImagem) {
+
+        previewImagem.src =
+            "";
+
+    }
+
+
+    document
+        .querySelectorAll(
+            'input[name="alergiasPrato"]'
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.checked =
+                    false;
+
+            }
+        );
+
+}
+
+
+/* =========================================
+   ATUALIZAR PRATO NO SUPABASE
+========================================= */
+
+async function atualizarPrato(
+    id,
+    dados
+) {
+
+    const resposta =
+        await fetch(
+
+            `${SUPABASE_URL}/rest/v1/prato?id=eq.${id}`,
+
+            {
+                method: "PATCH",
+
+                headers: {
+
+                    "apikey":
+                        SUPABASE_KEY,
+
+                    "Authorization":
+                        `Bearer ${SUPABASE_KEY}`,
+
+                    "Content-Type":
+                        "application/json",
+
+                    "Prefer":
+                        "return=representation"
+
+                },
+
+                body:
+                    JSON.stringify(dados)
+
+            }
+
+        );
+
+
+    if (!resposta.ok) {
+
+        const erro =
+            await resposta.text();
+
+
+        throw new Error(
+            `Erro ao atualizar (${resposta.status}): ${erro}`
+        );
+
+    }
+
+
+    return await resposta.json();
+
+}
+
+
+/* =========================================
+   ATUALIZAR ALERGÊNICOS DO PRATO
+========================================= */
+
+async function atualizarAlergiasDoPrato(
+    pratoId
+) {
+
+    const checkboxes =
+        document.querySelectorAll(
+            'input[name="alergiasPrato"]:checked'
+        );
+
+
+    const alergiasSelecionadas =
+        Array.from(checkboxes)
+            .map(
+                checkbox =>
+                    Number(
+                        checkbox.value
+                    )
+            );
+
+
+    console.log(
+        "Novos alergênicos:",
+        alergiasSelecionadas
+    );
+
+
+    /*
+     * Primeiro remove as relações
+     * antigas.
+     */
+
+    const respostaDelete =
+        await fetch(
+
+            `${SUPABASE_URL}/rest/v1/prato_alergia?prato_id=eq.${pratoId}`,
+
+            {
+                method: "DELETE",
+
+                headers: {
+
+                    "apikey":
+                        SUPABASE_KEY,
+
+                    "Authorization":
+                        `Bearer ${SUPABASE_KEY}`,
+
+                    "Prefer":
+                        "return=minimal"
+
+                }
+
+            }
+
+        );
+
+
+    if (!respostaDelete.ok) {
+
+        const erro =
+            await respostaDelete.text();
+
+
+        throw new Error(
+            `Erro ao atualizar os alergênicos (${respostaDelete.status}): ${erro}`
+        );
+
+    }
+
+
+    /*
+     * Se nenhum alergênico foi selecionado,
+     * não precisamos inserir nada.
+     */
+
+    if (!alergiasSelecionadas.length) {
+
+        return;
+
+    }
+
+
+    const relacoes =
+        alergiasSelecionadas.map(
+            alergiaId => ({
+
+                prato_id:
+                    Number(pratoId),
+
+                alergia_id:
+                    Number(alergiaId)
+
+            })
+        );
+
+
+    const respostaInsert =
+        await fetch(
+
+            `${SUPABASE_URL}/rest/v1/prato_alergia`,
+
+            {
+                method: "POST",
+
+                headers: {
+
+                    "apikey":
+                        SUPABASE_KEY,
+
+                    "Authorization":
+                        `Bearer ${SUPABASE_KEY}`,
+
+                    "Content-Type":
+                        "application/json",
+
+                    "Prefer":
+                        "return=minimal"
+
+                },
+
+                body:
+                    JSON.stringify(
+                        relacoes
+                    )
+
+            }
+
+        );
+
+
+    if (!respostaInsert.ok) {
+
+        const erro =
+            await respostaInsert.text();
+
+
+        throw new Error(
+            `Erro ao salvar os novos alergênicos (${respostaInsert.status}): ${erro}`
+        );
+
+    }
+
+}
+
+
+/* =========================================
    EXCLUIR PRATO
 ========================================= */
 
-async function excluirPrato(id, nome) {
+async function excluirPrato(
+    id,
+    nome
+) {
 
     const confirmar =
         confirm(
@@ -571,7 +1052,9 @@ async function excluirPrato(id, nome) {
    ENVIAR IMAGEM DO PRATO
 ========================================= */
 
-async function enviarImagem(arquivo) {
+async function enviarImagem(
+    arquivo
+) {
 
     console.log(
         "Enviando imagem:",
@@ -601,32 +1084,34 @@ async function enviarImagem(arquivo) {
     );
 
 
-    const resposta = await fetch(
+    const resposta =
+        await fetch(
 
-        `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${caminho}`,
+            `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${caminho}`,
 
-        {
-            method: "POST",
+            {
 
-            headers: {
+                method: "POST",
 
-                "apikey":
-                    SUPABASE_KEY,
+                headers: {
 
-                "Authorization":
-                    `Bearer ${SUPABASE_KEY}`,
+                    "apikey":
+                        SUPABASE_KEY,
 
-                "Content-Type":
-                    arquivo.type
+                    "Authorization":
+                        `Bearer ${SUPABASE_KEY}`,
 
-            },
+                    "Content-Type":
+                        arquivo.type
 
-            body:
-                arquivo
+                },
 
-        }
+                body:
+                    arquivo
 
-    );
+            }
+
+        );
 
 
     if (!resposta.ok) {
@@ -648,9 +1133,11 @@ async function enviarImagem(arquivo) {
 
 
     return (
+
         `${SUPABASE_URL}` +
         `/storage/v1/object/public/` +
         `${BUCKET}/${caminho}`
+
     );
 
 }
@@ -728,7 +1215,9 @@ async function carregarAlergiasParaPrato() {
         );
 
 
-        mostrarAlergiasParaPrato(alergias);
+        mostrarAlergiasParaPrato(
+            alergias
+        );
 
     }
 
@@ -754,9 +1243,12 @@ async function carregarAlergiasParaPrato() {
    MOSTRAR ALERGIAS PARA O PRATO
 ========================================= */
 
-function mostrarAlergiasParaPrato(alergias) {
+function mostrarAlergiasParaPrato(
+    alergias
+) {
 
-    listaAlergiasPrato.innerHTML = "";
+    listaAlergiasPrato.innerHTML =
+        "";
 
 
     if (!alergias.length) {
@@ -771,45 +1263,51 @@ function mostrarAlergiasParaPrato(alergias) {
     }
 
 
-    alergias.forEach(alergia => {
+    alergias.forEach(
+        alergia => {
 
-        const opcao =
-            document.createElement("label");
-
-
-        opcao.className =
-            "alergia-opcao";
-
-
-        const imagem =
-            alergia.imagem ||
-            "https://via.placeholder.com/100?text=Sem+imagem";
+            const opcao =
+                document.createElement(
+                    "label"
+                );
 
 
-        opcao.innerHTML = `
-
-            <input
-                type="checkbox"
-                name="alergiasPrato"
-                value="${alergia.id}"
-            >
-
-            <img
-                class="alergia-opcao-imagem"
-                src="${imagem}"
-                alt="${alergia.nome || "Alergia"}"
-            >
-
-            <span class="alergia-opcao-nome">
-                ${alergia.nome || "Sem nome"}
-            </span>
-
-        `;
+            opcao.className =
+                "alergia-opcao";
 
 
-        listaAlergiasPrato.appendChild(opcao);
+            const imagem =
+                alergia.imagem ||
+                "https://via.placeholder.com/100?text=Sem+imagem";
 
-    });
+
+            opcao.innerHTML = `
+
+                <input
+                    type="checkbox"
+                    name="alergiasPrato"
+                    value="${alergia.id}"
+                >
+
+                <img
+                    class="alergia-opcao-imagem"
+                    src="${imagem}"
+                    alt="${alergia.nome || "Alergia"}"
+                >
+
+                <span class="alergia-opcao-nome">
+                    ${alergia.nome || "Sem nome"}
+                </span>
+
+            `;
+
+
+            listaAlergiasPrato.appendChild(
+                opcao
+            );
+
+        }
+    );
 
 }
 
@@ -818,7 +1316,9 @@ function mostrarAlergiasParaPrato(alergias) {
    SALVAR ALERGIAS DO PRATO
 ========================================= */
 
-async function salvarAlergiasDoPrato(pratoId) {
+async function salvarAlergiasDoPrato(
+    pratoId
+) {
 
     const checkboxes =
         document.querySelectorAll(
@@ -828,8 +1328,11 @@ async function salvarAlergiasDoPrato(pratoId) {
 
     const alergiasSelecionadas =
         Array.from(checkboxes)
-            .map(checkbox =>
-                Number(checkbox.value)
+            .map(
+                checkbox =>
+                    Number(
+                        checkbox.value
+                    )
             );
 
 
@@ -896,7 +1399,9 @@ async function salvarAlergiasDoPrato(pratoId) {
                 },
 
                 body:
-                    JSON.stringify(relacoes)
+                    JSON.stringify(
+                        relacoes
+                    )
 
             }
 
@@ -924,7 +1429,7 @@ async function salvarAlergiasDoPrato(pratoId) {
 
 
 /* =========================================
-   ADICIONAR PRATO
+   ADICIONAR / EDITAR PRATO
 ========================================= */
 
 form.addEventListener(
@@ -1143,7 +1648,14 @@ form.addEventListener(
         }
 
 
-        if (!arquivo) {
+        /*
+         * Ao adicionar um prato, a imagem continua
+         * sendo obrigatória.
+         *
+         * Ao editar, podemos manter a imagem atual.
+         */
+
+        if (!arquivo && !pratoEmEdicao) {
 
             alert(
                 "Escolha uma imagem."
@@ -1155,6 +1667,7 @@ form.addEventListener(
 
 
         if (
+            arquivo &&
             !arquivo.type.startsWith("image/")
         ) {
 
@@ -1194,34 +1707,48 @@ form.addEventListener(
 
         try {
 
-            botaoAdicionar.disabled = true;
+            botaoAdicionar.disabled =
+                true;
 
 
             /* =====================================
-               UPLOAD DA IMAGEM
+               IMAGEM
             ===================================== */
 
-            botaoAdicionar.textContent =
-                "Enviando imagem...";
+            let urlImagem =
+                pratoEmEdicao
+                    ? pratoEmEdicao.imagem || null
+                    : null;
 
 
-            const urlImagem =
-                await enviarImagem(arquivo);
+            /*
+             * Só faz upload se o usuário
+             * escolher uma nova imagem.
+             */
+
+            if (arquivo) {
+
+                botaoAdicionar.textContent =
+                    "Enviando imagem...";
 
 
-            console.log(
-                "URL da imagem:",
-                urlImagem
-            );
+                urlImagem =
+                    await enviarImagem(
+                        arquivo
+                    );
+
+
+                console.log(
+                    "URL da imagem:",
+                    urlImagem
+                );
+
+            }
 
 
             /* =====================================
-               SALVAR NO BANCO
+               DADOS DO PRATO
             ===================================== */
-
-            botaoAdicionar.textContent =
-                "Salvando prato...";
-
 
             const dados = {
 
@@ -1261,36 +1788,101 @@ form.addEventListener(
             );
 
 
-            const resposta = await fetch(
+            /* =====================================
+               EDITAR PRATO EXISTENTE
+            ===================================== */
 
-                `${SUPABASE_URL}/rest/v1/prato`,
+            if (pratoEmEdicao) {
 
-                {
+                botaoAdicionar.textContent =
+                    "Salvando alterações...";
 
-                    method: "POST",
 
-                    headers: {
+                await atualizarPrato(
+                    pratoEmEdicao.id,
+                    dados
+                );
 
-                        "apikey":
-                            SUPABASE_KEY,
 
-                        "Authorization":
-                            `Bearer ${SUPABASE_KEY}`,
+                /* =====================================
+                   ATUALIZAR ALERGÊNICOS
+                ===================================== */
 
-                        "Content-Type":
-                            "application/json",
+                botaoAdicionar.textContent =
+                    "Salvando alergênicos...";
 
-                        "Prefer":
-                            "return=representation"
 
-                    },
+                await atualizarAlergiasDoPrato(
+                    pratoEmEdicao.id
+                );
 
-                    body:
-                        JSON.stringify(dados)
 
-                }
+                alert(
+                    "Prato atualizado com sucesso!"
+                );
 
-            );
+
+                cancelarEdicao();
+
+
+                await carregarPratos();
+
+
+                return;
+
+            }
+
+
+            /* =====================================
+               ADICIONAR NOVO PRATO
+            ===================================== */
+
+            if (!urlImagem) {
+
+                throw new Error(
+                    "A imagem do prato não foi enviada."
+                );
+
+            }
+
+
+            botaoAdicionar.textContent =
+                "Salvando prato...";
+
+
+            const resposta =
+                await fetch(
+
+                    `${SUPABASE_URL}/rest/v1/prato`,
+
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "apikey":
+                                SUPABASE_KEY,
+
+                            "Authorization":
+                                `Bearer ${SUPABASE_KEY}`,
+
+                            "Content-Type":
+                                "application/json",
+
+                            "Prefer":
+                                "return=representation"
+
+                        },
+
+                        body:
+                            JSON.stringify(
+                                dados
+                            )
+
+                    }
+
+                );
 
 
             if (!resposta.ok) {
@@ -1349,11 +1941,11 @@ form.addEventListener(
 
 
             /* =====================================
-               SALVAR ALERGIAS DO PRATO
+               SALVAR ALERGÊNICOS DO PRATO
             ===================================== */
 
             botaoAdicionar.textContent =
-                "Salvando alergias...";
+                "Salvando alergênicos...";
 
 
             await salvarAlergiasDoPrato(
@@ -1400,10 +1992,23 @@ form.addEventListener(
 
         finally {
 
-            botaoAdicionar.disabled = false;
+            botaoAdicionar.disabled =
+                false;
 
-            botaoAdicionar.textContent =
-                "+ Adicionar prato";
+
+            if (pratoEmEdicao) {
+
+                botaoAdicionar.textContent =
+                    "💾 Salvar alterações";
+
+            }
+
+            else {
+
+                botaoAdicionar.textContent =
+                    "+ Adicionar prato";
+
+            }
 
         }
 
@@ -1470,7 +2075,9 @@ inputImagem.addEventListener(
             };
 
 
-        leitor.readAsDataURL(arquivo);
+        leitor.readAsDataURL(
+            arquivo
+        );
 
     }
 
@@ -1494,7 +2101,6 @@ async function carregarAlergias() {
         `<p class="carregando">
             Carregando alergias...
         </p>`;
-
 
     try {
 
@@ -1545,7 +2151,9 @@ async function carregarAlergias() {
         );
 
 
-        mostrarAlergias(alergias);
+        mostrarAlergias(
+            alergias
+        );
 
 
         /*
@@ -1553,7 +2161,9 @@ async function carregarAlergias() {
          * disponível no formulário de pratos.
          */
 
-        mostrarAlergiasParaPrato(alergias);
+        mostrarAlergiasParaPrato(
+            alergias
+        );
 
     }
 
@@ -1589,9 +2199,12 @@ async function carregarAlergias() {
    MOSTRAR ALERGIAS
 ========================================= */
 
-function mostrarAlergias(alergias) {
+function mostrarAlergias(
+    alergias
+) {
 
-    listaAlergias.innerHTML = "";
+    listaAlergias.innerHTML =
+        "";
 
 
     if (!alergias.length) {
@@ -1606,71 +2219,78 @@ function mostrarAlergias(alergias) {
     }
 
 
-    alergias.forEach(alergia => {
+    alergias.forEach(
+        alergia => {
 
-        const card =
-            document.createElement("article");
-
-
-        card.className =
-            "alergia";
-
-
-        const imagem =
-            alergia.imagem ||
-            "https://via.placeholder.com/100?text=Sem+imagem";
+            const card =
+                document.createElement(
+                    "article"
+                );
 
 
-        card.innerHTML = `
-
-            <img
-                class="alergia-imagem"
-                src="${imagem}"
-                alt="${alergia.nome || "Alergia"}"
-            >
+            card.className =
+                "alergia";
 
 
-            <span class="alergia-nome">
-
-                ${alergia.nome || "Sem nome"}
-
-            </span>
+            const imagem =
+                alergia.imagem ||
+                "https://via.placeholder.com/100?text=Sem+imagem";
 
 
-            <button
-                class="botao-excluir-alergia"
-                type="button"
-            >
-                🗑️ Excluir
-            </button>
+            card.innerHTML = `
 
-        `;
+                <img
+                    class="alergia-imagem"
+                    src="${imagem}"
+                    alt="${alergia.nome || "Alergia"}"
+                >
 
 
-        const botaoExcluir =
-            card.querySelector(
-                ".botao-excluir-alergia"
+                <span class="alergia-nome">
+
+                    ${alergia.nome || "Sem nome"}
+
+                </span>
+
+
+                <button
+                    class="botao-excluir-alergia"
+                    type="button"
+                >
+                    🗑️ Excluir
+                </button>
+
+            `;
+
+
+            const botaoExcluir =
+                card.querySelector(
+                    ".botao-excluir-alergia"
+                );
+
+
+            botaoExcluir.addEventListener(
+                "click",
+
+                function () {
+
+                    excluirAlergia(
+                        alergia.id,
+                        alergia.nome
+                    );
+
+                }
+
             );
 
 
-        botaoExcluir.addEventListener(
-            "click",
+            listaAlergias.appendChild(
+                card
+            );
 
-            function () {
+        }
 
-                excluirAlergia(
-                    alergia.id,
-                    alergia.nome
-                );
-
-            }
-
-        );
-
-
-        listaAlergias.appendChild(card);
-
-    });
+    );
 
 }
 
@@ -1679,7 +2299,9 @@ function mostrarAlergias(alergias) {
    ENVIAR IMAGEM DA ALERGIA
 ========================================= */
 
-async function enviarImagemAlergia(arquivo) {
+async function enviarImagemAlergia(
+    arquivo
+) {
 
     console.log(
         "Enviando imagem da alergia:",
@@ -1786,8 +2408,10 @@ inputImagemAlergia.addEventListener(
             previewAlergiaContainer.style.display =
                 "none";
 
+
             previewImagemAlergia.src =
                 "";
+
 
             return;
 
@@ -1802,14 +2426,18 @@ inputImagemAlergia.addEventListener(
                 "O arquivo selecionado não é uma imagem."
             );
 
+
             inputImagemAlergia.value =
                 "";
+
 
             previewAlergiaContainer.style.display =
                 "none";
 
+
             previewImagemAlergia.src =
                 "";
+
 
             return;
 
@@ -1833,7 +2461,9 @@ inputImagemAlergia.addEventListener(
             };
 
 
-        leitor.readAsDataURL(arquivo);
+        leitor.readAsDataURL(
+            arquivo
+        );
 
     }
 
@@ -1973,7 +2603,9 @@ formAlergia.addEventListener(
                         },
 
                         body:
-                            JSON.stringify(dados)
+                            JSON.stringify(
+                                dados
+                            )
 
                     }
 
@@ -2068,7 +2700,10 @@ formAlergia.addEventListener(
    EXCLUIR ALERGIA
 ========================================= */
 
-async function excluirAlergia(id, nome) {
+async function excluirAlergia(
+    id,
+    nome
+) {
 
     const confirmar =
         confirm(
