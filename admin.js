@@ -1,271 +1,252 @@
-const SUPABASE_URL =
-    "https://fmwmgoxjmcvsmfbcpfsj.supabase.co";
-
-const SUPABASE_KEY =
-    "sb_publishable_ZJR2Z6gOfNO5rFhZb-RWwg_qvyY2b9Y";
-
+const SUPABASE_URL = "https://fmwmgoxjmcvsmfbcpfsj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ZJR2Z6gOfNO5rFhZb-RWwg_qvyY2b9Y";
 const BUCKET = "imagens";
 
-
-/* =========================================
-   ELEMENTOS - PRATOS
-========================================= */
-
 const form = document.getElementById("formPrato");
+const listaPratos = document.getElementById("listaPratos");
+const botaoAdicionar = document.getElementById("botaoAdicionar");
+const inputImagem = document.getElementById("imagem");
 
-const listaPratos =
-    document.getElementById("listaPratos");
+const formAlergia = document.getElementById("formAlergia");
+const listaAlergias = document.getElementById("listaAlergias");
+const botaoAdicionarAlergia = document.getElementById("botaoAdicionarAlergia");
+const inputImagemAlergia = document.getElementById("imagemAlergia");
 
-const botaoAdicionar =
-    document.getElementById("botaoAdicionar");
-
-const inputImagem =
-    document.getElementById("imagem");
-
-
-/* =========================================
-   ESTADO DE EDIÇÃO
-========================================= */
+const previewAlergiaContainer =
+    document.getElementById("previewAlergiaContainer");
+const previewImagemAlergia =
+    document.getElementById("previewImagemAlergia");
+const listaAlergiasPrato =
+    document.getElementById("listaAlergiasPrato");
 
 let pratoEmEdicao = null;
 
 
 /* =========================================
-   ELEMENTOS - ALERGIAS
+   FUNÇÕES AUXILIARES
 ========================================= */
 
-const formAlergia =
-    document.getElementById("formAlergia");
+function headersSupabase(extra = {}) {
+    return {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        ...extra
+    };
+}
 
-const listaAlergias =
-    document.getElementById("listaAlergias");
+async function verificarResposta(resposta, operacao) {
+    if (!resposta.ok) {
+        const erro = await resposta.text();
+        throw new Error(
+            `${operacao} (${resposta.status}): ${erro}`
+        );
+    }
 
-const botaoAdicionarAlergia =
-    document.getElementById("botaoAdicionarAlergia");
+    return resposta;
+}
 
-const inputImagemAlergia =
-    document.getElementById("imagemAlergia");
+function obterCampo(id) {
+    const campo = document.getElementById(id);
 
-const previewAlergiaContainer =
-    document.getElementById("previewAlergiaContainer");
+    if (!campo) {
+        throw new Error(
+            `O campo #${id} não foi encontrado no HTML.`
+        );
+    }
 
-const previewImagemAlergia =
-    document.getElementById("previewImagemAlergia");
+    return campo;
+}
+
+function valorCampo(id) {
+    const campo = document.getElementById(id);
+    return campo ? campo.value.trim() : "";
+}
+
+function definirCampo(id, valor) {
+    const campo = document.getElementById(id);
+
+    if (campo) {
+        campo.value = valor ?? "";
+    } else {
+        console.warn(`Campo #${id} não encontrado no HTML.`);
+    }
+}
+
+function formatarPreco(valor) {
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero)) {
+        return "";
+    }
+
+    return numero.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+    });
+}
+
+function mostrarErro(mensagem, erro) {
+    console.error(mensagem, erro);
+
+    alert(
+        `${mensagem}\n\n${erro?.message || erro || "Erro desconhecido."}`
+    );
+}
 
 
 /* =========================================
-   ELEMENTOS - ALERGIAS DO PRATO
+   UPLOAD DE IMAGENS
 ========================================= */
 
-const listaAlergiasPrato =
-    document.getElementById("listaAlergiasPrato");
+async function enviarImagem(arquivo, pasta = "pratos") {
+    if (!arquivo) {
+        throw new Error("Nenhuma imagem foi selecionada.");
+    }
+
+    if (!arquivo.type.startsWith("image/")) {
+        throw new Error("O arquivo selecionado não é uma imagem.");
+    }
+
+    const extensao = arquivo.name.includes(".")
+        ? arquivo.name.split(".").pop().toLowerCase()
+        : "jpg";
+
+    const nomeArquivo =
+        `${Date.now()}-${Math.random().toString(36).slice(2)}.${extensao}`;
+
+    const caminho = `${pasta}/${nomeArquivo}`;
+
+    const resposta = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${caminho}`,
+        {
+            method: "POST",
+            headers: headersSupabase({
+                "Content-Type": arquivo.type
+            }),
+            body: arquivo
+        }
+    );
+
+    await verificarResposta(resposta, "Erro ao enviar imagem");
+
+    return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${caminho}`;
+}
 
 
 /* =========================================
-   CARREGAR PRATOS + ALERGIAS
+   PRÉVIA DA IMAGEM DO PRATO
+========================================= */
+
+if (inputImagem) {
+    inputImagem.addEventListener("change", function () {
+        const arquivo = inputImagem.files?.[0];
+        const container = document.getElementById("previewContainer");
+        const imagem = document.getElementById("previewImagem");
+
+        if (!container || !imagem) return;
+
+        if (!arquivo) {
+            container.style.display = "none";
+            imagem.removeAttribute("src");
+            return;
+        }
+
+        if (!arquivo.type.startsWith("image/")) {
+            alert("Selecione um arquivo de imagem válido.");
+            inputImagem.value = "";
+            container.style.display = "none";
+            imagem.removeAttribute("src");
+            return;
+        }
+
+        const leitor = new FileReader();
+
+        leitor.onload = function (evento) {
+            imagem.src = evento.target.result;
+            container.style.display = "block";
+        };
+
+        leitor.readAsDataURL(arquivo);
+    });
+}
+
+
+/* =========================================
+   CARREGAR PRATOS
 ========================================= */
 
 async function carregarPratos() {
+    if (!listaPratos) return;
 
     listaPratos.innerHTML =
-        `<p class="carregando">
-            Carregando pratos...
-        </p>`;
+        '<p class="carregando">Carregando pratos...</p>';
 
     try {
-
-        /* =====================================
-           BUSCAR PRATOS
-        ===================================== */
-
         const respostaPratos = await fetch(
-
             `${SUPABASE_URL}/rest/v1/prato?select=*&order=id.asc`,
-
             {
-                method: "GET",
-
-                headers: {
-                    "apikey": SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`
-                }
+                headers: headersSupabase()
             }
-
         );
 
+        await verificarResposta(respostaPratos, "Erro ao carregar pratos");
 
-        if (!respostaPratos.ok) {
-
-            const erro =
-                await respostaPratos.text();
-
-            throw new Error(
-                `Erro ao carregar pratos (${respostaPratos.status}): ${erro}`
-            );
-
-        }
-
-
-        const pratos =
-            await respostaPratos.json();
-
-
-        console.log(
-            "Pratos encontrados:",
-            pratos
-        );
-
-
-        /* =====================================
-           BUSCAR RELAÇÕES PRATO ↔ ALERGIA
-        ===================================== */
+        const pratos = await respostaPratos.json();
 
         const respostaRelacoes = await fetch(
-
             `${SUPABASE_URL}/rest/v1/prato_alergia?select=*`,
-
             {
-                method: "GET",
-
-                headers: {
-                    "apikey": SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`
-                }
+                headers: headersSupabase()
             }
-
         );
 
-
-        if (!respostaRelacoes.ok) {
-
-            const erro =
-                await respostaRelacoes.text();
-
-            throw new Error(
-                `Erro ao carregar relações de alergias (${respostaRelacoes.status}): ${erro}`
-            );
-
-        }
-
-
-        const relacoes =
-            await respostaRelacoes.json();
-
-
-        console.log(
-            "Relações prato_alergia:",
-            relacoes
+        await verificarResposta(
+            respostaRelacoes,
+            "Erro ao carregar relações de alergias"
         );
 
-
-        /* =====================================
-           BUSCAR ALERGIAS
-        ===================================== */
+        const relacoes = await respostaRelacoes.json();
 
         const respostaAlergias = await fetch(
-
             `${SUPABASE_URL}/rest/v1/alergia?select=*&order=id.asc`,
-
             {
-                method: "GET",
-
-                headers: {
-                    "apikey": SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`
-                }
+                headers: headersSupabase()
             }
-
         );
 
-
-        if (!respostaAlergias.ok) {
-
-            const erro =
-                await respostaAlergias.text();
-
-            throw new Error(
-                `Erro ao carregar alergias (${respostaAlergias.status}): ${erro}`
-            );
-
-        }
-
-
-        const alergias =
-            await respostaAlergias.json();
-
-
-        console.log(
-            "Alergias encontradas:",
-            alergias
+        await verificarResposta(
+            respostaAlergias,
+            "Erro ao carregar alergias"
         );
 
+        const alergias = await respostaAlergias.json();
 
-        /* =====================================
-           JUNTAR AS INFORMAÇÕES
-        ===================================== */
+        const pratosComAlergias = pratos.map(prato => {
+            const alergiasDoPrato = relacoes
+                .filter(relacao =>
+                    Number(relacao.prato_id) === Number(prato.id)
+                )
+                .map(relacao =>
+                    alergias.find(alergia =>
+                        Number(alergia.id) === Number(relacao.alergia_id)
+                    )
+                )
+                .filter(Boolean);
 
-        const pratosComAlergias =
-            pratos.map(prato => {
-
-                const relacoesDoPrato =
-                    relacoes.filter(
-                        relacao =>
-                            Number(relacao.prato_id) ===
-                            Number(prato.id)
-                    );
-
-
-                const alergiasDoPrato =
-                    relacoesDoPrato
-                        .map(relacao =>
-                            alergias.find(
-                                alergia =>
-                                    Number(alergia.id) ===
-                                    Number(relacao.alergia_id)
-                            )
-                        )
-                        .filter(Boolean);
-
-
-                return {
-                    ...prato,
-                    alergias: alergiasDoPrato
-                };
-
-            });
-
-
-        console.log(
-            "Pratos com suas alergias:",
-            pratosComAlergias
-        );
-
+            return {
+                ...prato,
+                alergias: alergiasDoPrato
+            };
+        });
 
         mostrarPratos(pratosComAlergias);
 
-    }
-
-    catch (erro) {
-
-        console.error(
-            "Erro ao carregar pratos:",
-            erro
-        );
-
+    } catch (erro) {
+        mostrarErro("Não foi possível carregar os pratos.", erro);
 
         listaPratos.innerHTML =
-            `<p>
-                Erro ao carregar os pratos.
-            </p>`;
-
+            "<p>Erro ao carregar os pratos. Verifique o console.</p>";
     }
-
 }
 
 
@@ -274,232 +255,105 @@ async function carregarPratos() {
 ========================================= */
 
 function mostrarPratos(pratos) {
+    if (!listaPratos) return;
 
     listaPratos.innerHTML = "";
 
-
     if (!pratos.length) {
-
-        listaPratos.innerHTML =
-            `<p>Nenhum prato cadastrado.</p>`;
-
+        listaPratos.innerHTML = "<p>Nenhum prato cadastrado.</p>";
         return;
-
     }
 
-
     pratos.forEach(prato => {
-
-        const card =
-            document.createElement("article");
-
-
+        const card = document.createElement("article");
         card.className = "prato";
 
-
-        const imagem =
-            prato.imagem ||
+        const imagem = prato.imagem ||
             "https://via.placeholder.com/500x300?text=Sem+imagem";
 
-
-        const preco =
-            prato.preco !== null &&
-            prato.preco !== undefined
-                ? Number(prato.preco)
-                : null;
-
+        const alergiasHTML = prato.alergias?.length
+            ? prato.alergias.map(alergia => `
+                <div class="prato-alergia">
+                    <img
+                        src="${alergia.imagem || "https://via.placeholder.com/60"}"
+                        alt="${alergia.nome || "Alergia"}"
+                        class="prato-alergia-imagem"
+                    >
+                    <span>${alergia.nome || "Sem nome"}</span>
+                </div>
+            `).join("")
+            : "<span>Nenhuma alergia cadastrada</span>";
 
         card.innerHTML = `
-
             <img
                 class="prato-imagem"
                 src="${imagem}"
                 alt="${prato.nome || "Prato"}"
             >
 
-
             <div class="prato-info">
+                <h3>${prato.nome || "Sem nome"}</h3>
 
-                <h3>
-                    ${prato.nome || "Sem nome"}
-                </h3>
-
-
-                <p>
-                    ${prato.descricao || "Sem descrição"}
-                </p>
-
+                <p>${prato.descricao || "Sem descrição"}</p>
 
                 <span class="prato-categoria">
                     ${prato.categoria || "Sem categoria"}
                 </span>
 
-
                 ${
-                    preco !== null
-                        ? `
-
-                        <span class="prato-preco">
-
-                            R$ ${preco
-                                .toFixed(2)
-                                .replace(".", ",")}
-
-                        </span>
-
-                        `
+                    prato.preco !== null && prato.preco !== undefined
+                        ? `<span class="prato-preco">
+                               ${formatarPreco(prato.preco)}
+                           </span>`
                         : ""
                 }
-
 
                 ${
                     prato.quantidade !== null &&
                     prato.quantidade !== undefined
-                        ? `
-
-                        <p class="prato-quantidade">
-
-                            Quantidade disponível:
-                            ${prato.quantidade}
-
-                        </p>
-
-                        `
+                        ? `<p class="prato-quantidade">
+                               Quantidade disponível: ${prato.quantidade}
+                           </p>`
                         : ""
                 }
 
+                <div class="prato-alergias">
+                    <strong>⚠️ Alergias:</strong>
+                    <div class="prato-alergias-lista">
+                        ${alergiasHTML}
+                    </div>
+                </div>
 
-                ${
-                    prato.alergias &&
-                    prato.alergias.length
-                        ? `
+                <div class="botoes-acoes-prato acoes-prato">
+                    <button
+                        class="botao-editar"
+                        type="button"
+                    >
+                        ✏️ Editar prato
+                    </button>
 
-                            <div class="prato-alergias">
-
-                                <strong>
-                                    ⚠️ Alergias:
-                                </strong>
-
-                                <div class="prato-alergias-lista">
-
-                                    ${prato.alergias.map(alergia => `
-
-                                        <div class="prato-alergia">
-
-                                            <img
-                                                src="${
-                                                    alergia.imagem ||
-                                                    "https://via.placeholder.com/60?text=Alergia"
-                                                }"
-                                                alt="${
-                                                    alergia.nome ||
-                                                    "Alergia"
-                                                }"
-                                                class="prato-alergia-imagem"
-                                            >
-
-                                            <span>
-                                                ${
-                                                    alergia.nome ||
-                                                    "Sem nome"
-                                                }
-                                            </span>
-
-                                        </div>
-
-                                    `).join("")}
-
-                                </div>
-
-                            </div>
-                        `
-                        : `
-                            <div class="prato-alergias sem-alergias">
-
-                                <strong>
-                                    ⚠️ Alergias:
-                                </strong>
-
-                                <span>
-                                    Nenhuma alergia cadastrada
-                                </span>
-
-                            </div>
-                        `
-                }
-
-
-                <!-- BOTÃO EDITAR -->
-
-                <button
-                    class="botao-editar"
-                    type="button"
-                >
-                    ✏️ Editar prato
-                </button>
-
-
-                <!-- BOTÃO EXCLUIR -->
-
-                <button
-                    class="botao-excluir"
-                    type="button"
-                >
-                    🗑️ Excluir prato
-                </button>
-
+                    <button
+                        class="botao-excluir"
+                        type="button"
+                    >
+                        🗑️ Excluir prato
+                    </button>
+                </div>
             </div>
-
         `;
 
-
-        /* =====================================
-           EVENTO DO BOTÃO EDITAR
-        ===================================== */
-
-        const botaoEditar =
-            card.querySelector(".botao-editar");
-
-
-        botaoEditar.addEventListener(
+        card.querySelector(".botao-editar").addEventListener(
             "click",
-
-            function () {
-
-                editarPrato(prato);
-
-            }
-
+            () => editarPrato(prato)
         );
 
-
-        /* =====================================
-           EVENTO DO BOTÃO EXCLUIR
-        ===================================== */
-
-        const botaoExcluir =
-            card.querySelector(".botao-excluir");
-
-
-        botaoExcluir.addEventListener(
+        card.querySelector(".botao-excluir").addEventListener(
             "click",
-
-            function () {
-
-                excluirPrato(
-                    prato.id,
-                    prato.nome
-                );
-
-            }
-
+            () => excluirPrato(prato.id, prato.nome)
         );
-
 
         listaPratos.appendChild(card);
-
     });
-
 }
 
 
@@ -508,437 +362,144 @@ function mostrarPratos(pratos) {
 ========================================= */
 
 function editarPrato(prato) {
+    if (!prato || prato.id === undefined || prato.id === null) {
+        alert("Não foi possível identificar o prato para edição.");
+        return;
+    }
 
     pratoEmEdicao = prato;
 
-    console.log(
-        "Editando prato:",
-        prato
-    );
+    const campos = {
+        nome: prato.nome,
+        descricao: prato.descricao,
+        categoria: prato.categoria,
+        preco: prato.preco,
+        quantidade: prato.quantidade,
+        preco_pequeno: prato.preco_pequeno,
+        preco_medio: prato.preco_medio,
+        preco_grande: prato.preco_grande
+    };
 
-
-    document.getElementById("nome").value =
-        prato.nome || "";
-
-
-    document.getElementById("descricao").value =
-        prato.descricao || "";
-
-
-    document.getElementById("categoria").value =
-        prato.categoria || "";
-
-
-    document.getElementById("preco").value =
-        prato.preco !== null &&
-        prato.preco !== undefined
-            ? prato.preco
-            : "";
-
-
-    document.getElementById("quantidade").value =
-        prato.quantidade !== null &&
-        prato.quantidade !== undefined
-            ? prato.quantidade
-            : "";
-
-
-    document.getElementById("preco_pequeno").value =
-        prato.preco_pequeno !== null &&
-        prato.preco_pequeno !== undefined
-            ? prato.preco_pequeno
-            : "";
-
-
-    document.getElementById("preco_medio").value =
-        prato.preco_medio !== null &&
-        prato.preco_medio !== undefined
-            ? prato.preco_medio
-            : "";
-
-
-    document.getElementById("preco_grande").value =
-        prato.preco_grande !== null &&
-        prato.preco_grande !== undefined
-            ? prato.preco_grande
-            : "";
-
-
-    const previewContainer =
-        document.getElementById(
-            "previewContainer"
-        );
-
-
-    const previewImagem =
-        document.getElementById(
-            "previewImagem"
-        );
-
-
-    if (prato.imagem) {
-
-        previewImagem.src =
-            prato.imagem;
-
-        previewContainer.style.display =
-            "block";
-
-    }
-
-
-    /*
-     * Selecionar os alergênicos
-     * que já pertencem ao prato.
-     */
-
-    document
-        .querySelectorAll(
-            'input[name="alergiasPrato"]'
-        )
-        .forEach(
-            checkbox => {
-
-                checkbox.checked =
-                    Array.isArray(
-                        prato.alergias
-                    ) &&
-                    prato.alergias.some(
-                        alergia =>
-                            Number(alergia.id) ===
-                            Number(checkbox.value)
-                    );
-
-            }
-        );
-
-
-    botaoAdicionar.textContent =
-        "💾 Salvar alterações";
-
-
-    let botaoCancelar =
-        document.getElementById(
-            "botaoCancelarEdicao"
-        );
-
-
-    if (!botaoCancelar) {
-
-        botaoCancelar =
-            document.createElement(
-                "button"
-            );
-
-
-        botaoCancelar.id =
-            "botaoCancelarEdicao";
-
-
-        botaoCancelar.type =
-            "button";
-
-
-        botaoCancelar.textContent =
-            "✖ Cancelar edição";
-
-
-        botaoAdicionar.insertAdjacentElement(
-            "afterend",
-            botaoCancelar
-        );
-
-
-        botaoCancelar.addEventListener(
-            "click",
-            cancelarEdicao
-        );
-
-    }
-
-
-    form.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
+    Object.entries(campos).forEach(([id, valor]) => {
+        definirCampo(id, valor);
     });
 
-}
+    const previewContainer = document.getElementById("previewContainer");
+    const previewImagem = document.getElementById("previewImagem");
 
+    if (previewContainer && previewImagem) {
+        if (prato.imagem) {
+            previewImagem.src = prato.imagem;
+            previewContainer.style.display = "block";
+        } else {
+            previewImagem.removeAttribute("src");
+            previewContainer.style.display = "none";
+        }
+    }
 
-function cancelarEdicao() {
+    document.querySelectorAll('input[name="alergiasPrato"]')
+        .forEach(checkbox => {
+            checkbox.checked = Boolean(
+                prato.alergias?.some(
+                    alergia => Number(alergia.id) === Number(checkbox.value)
+                )
+            );
+        });
 
-    pratoEmEdicao = null;
+    if (form) {
+        form.classList.add("modo-edicao");
+        form.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
 
+    if (botaoAdicionar) {
+        botaoAdicionar.textContent = "💾 Salvar alterações";
+        botaoAdicionar.classList.add("modo-edicao");
+    }
 
-    form.reset();
+    let botaoCancelar = document.getElementById("botaoCancelarEdicao");
 
+    if (!botaoCancelar && botaoAdicionar) {
+        botaoCancelar = document.createElement("button");
+        botaoCancelar.id = "botaoCancelarEdicao";
+        botaoCancelar.type = "button";
+        botaoCancelar.textContent = "✖ Cancelar edição";
 
-    botaoAdicionar.textContent =
-        "+ Adicionar prato";
+        botaoAdicionar.insertAdjacentElement("afterend", botaoCancelar);
 
-
-    const botaoCancelar =
-        document.getElementById(
-            "botaoCancelarEdicao"
-        );
-
+        botaoCancelar.addEventListener("click", cancelarEdicao);
+    }
 
     if (botaoCancelar) {
+        botaoCancelar.style.display = "inline-block";
+    }
+}
 
-        botaoCancelar.remove();
 
+/* =========================================
+   CANCELAR EDIÇÃO
+========================================= */
+
+function cancelarEdicao() {
+    pratoEmEdicao = null;
+
+    if (form) {
+        form.reset();
+        form.classList.remove("modo-edicao");
     }
 
+    if (botaoAdicionar) {
+        botaoAdicionar.disabled = false;
+        botaoAdicionar.textContent = "+ Adicionar prato";
+        botaoAdicionar.classList.remove("modo-edicao");
+    }
 
-    const previewContainer =
-        document.getElementById(
-            "previewContainer"
-        );
-
-
-    const previewImagem =
-        document.getElementById(
-            "previewImagem"
-        );
-
+    const previewContainer = document.getElementById("previewContainer");
+    const previewImagem = document.getElementById("previewImagem");
 
     if (previewContainer) {
-
-        previewContainer.style.display =
-            "none";
-
+        previewContainer.style.display = "none";
     }
-
 
     if (previewImagem) {
-
-        previewImagem.src =
-            "";
-
+        previewImagem.removeAttribute("src");
     }
 
+    document.querySelectorAll('input[name="alergiasPrato"]')
+        .forEach(checkbox => {
+            checkbox.checked = false;
+        });
 
-    document
-        .querySelectorAll(
-            'input[name="alergiasPrato"]'
-        )
-        .forEach(
-            checkbox => {
+    const botaoCancelar = document.getElementById("botaoCancelarEdicao");
 
-                checkbox.checked =
-                    false;
-
-            }
-        );
-
+    if (botaoCancelar) {
+        botaoCancelar.style.display = "none";
+    }
 }
 
 
 /* =========================================
-   ATUALIZAR PRATO NO SUPABASE
+   ATUALIZAR PRATO
 ========================================= */
 
-async function atualizarPrato(
-    id,
-    dados
-) {
-
-    const resposta =
-        await fetch(
-
-            `${SUPABASE_URL}/rest/v1/prato?id=eq.${id}`,
-
-            {
-                method: "PATCH",
-
-                headers: {
-
-                    "apikey":
-                        SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`,
-
-                    "Content-Type":
-                        "application/json",
-
-                    "Prefer":
-                        "return=representation"
-
-                },
-
-                body:
-                    JSON.stringify(dados)
-
-            }
-
-        );
-
-
-    if (!resposta.ok) {
-
-        const erro =
-            await resposta.text();
-
-
-        throw new Error(
-            `Erro ao atualizar (${resposta.status}): ${erro}`
-        );
-
-    }
-
-
-    return await resposta.json();
-
-}
-
-
-/* =========================================
-   ATUALIZAR ALERGÊNICOS DO PRATO
-========================================= */
-
-async function atualizarAlergiasDoPrato(
-    pratoId
-) {
-
-    const checkboxes =
-        document.querySelectorAll(
-            'input[name="alergiasPrato"]:checked'
-        );
-
-
-    const alergiasSelecionadas =
-        Array.from(checkboxes)
-            .map(
-                checkbox =>
-                    Number(
-                        checkbox.value
-                    )
-            );
-
-
-    console.log(
-        "Novos alergênicos:",
-        alergiasSelecionadas
+async function atualizarPrato(id, dados) {
+    const resposta = await fetch(
+        `${SUPABASE_URL}/rest/v1/prato?id=eq.${encodeURIComponent(id)}`,
+        {
+            method: "PATCH",
+            headers: headersSupabase({
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            }),
+            body: JSON.stringify(dados)
+        }
     );
 
+    await verificarResposta(resposta, "Erro ao atualizar prato");
 
-    /*
-     * Primeiro remove as relações
-     * antigas.
-     */
-
-    const respostaDelete =
-        await fetch(
-
-            `${SUPABASE_URL}/rest/v1/prato_alergia?prato_id=eq.${pratoId}`,
-
-            {
-                method: "DELETE",
-
-                headers: {
-
-                    "apikey":
-                        SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`,
-
-                    "Prefer":
-                        "return=minimal"
-
-                }
-
-            }
-
-        );
-
-
-    if (!respostaDelete.ok) {
-
-        const erro =
-            await respostaDelete.text();
-
-
-        throw new Error(
-            `Erro ao atualizar os alergênicos (${respostaDelete.status}): ${erro}`
-        );
-
-    }
-
-
-    /*
-     * Se nenhum alergênico foi selecionado,
-     * não precisamos inserir nada.
-     */
-
-    if (!alergiasSelecionadas.length) {
-
-        return;
-
-    }
-
-
-    const relacoes =
-        alergiasSelecionadas.map(
-            alergiaId => ({
-
-                prato_id:
-                    Number(pratoId),
-
-                alergia_id:
-                    Number(alergiaId)
-
-            })
-        );
-
-
-    const respostaInsert =
-        await fetch(
-
-            `${SUPABASE_URL}/rest/v1/prato_alergia`,
-
-            {
-                method: "POST",
-
-                headers: {
-
-                    "apikey":
-                        SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`,
-
-                    "Content-Type":
-                        "application/json",
-
-                    "Prefer":
-                        "return=minimal"
-
-                },
-
-                body:
-                    JSON.stringify(
-                        relacoes
-                    )
-
-            }
-
-        );
-
-
-    if (!respostaInsert.ok) {
-
-        const erro =
-            await respostaInsert.text();
-
-
-        throw new Error(
-            `Erro ao salvar os novos alergênicos (${respostaInsert.status}): ${erro}`
-        );
-
-    }
-
+    return resposta.json();
 }
 
 
@@ -946,1447 +507,426 @@ async function atualizarAlergiasDoPrato(
    EXCLUIR PRATO
 ========================================= */
 
-async function excluirPrato(
-    id,
-    nome
-) {
-
-    const confirmar =
-        confirm(
-            `Tem certeza que deseja excluir "${nome}"?`
-        );
-
-
-    if (!confirmar) {
-
+async function excluirPrato(id, nome) {
+    if (!confirm(`Tem certeza que deseja excluir "${nome}"?`)) {
         return;
-
     }
-
 
     try {
-
-        console.log(
-            "Excluindo prato:",
-            id
+        const resposta = await fetch(
+            `${SUPABASE_URL}/rest/v1/prato?id=eq.${encodeURIComponent(id)}`,
+            {
+                method: "DELETE",
+                headers: headersSupabase({
+                    "Prefer": "return=representation"
+                })
+            }
         );
 
+        await verificarResposta(resposta, "Erro ao excluir prato");
 
-        const resposta =
-            await fetch(
-
-                `${SUPABASE_URL}/rest/v1/prato?id=eq.${id}`,
-
-                {
-
-                    method: "DELETE",
-
-                    headers: {
-
-                        "apikey":
-                            SUPABASE_KEY,
-
-                        "Authorization":
-                            `Bearer ${SUPABASE_KEY}`,
-
-                        "Prefer":
-                            "return=representation"
-
-                    }
-
-                }
-
-            );
-
-
-        if (!resposta.ok) {
-
-            const erro =
-                await resposta.text();
-
-
-            throw new Error(
-
-                `Erro ao excluir (${resposta.status}): ${erro}`
-
-            );
-
-        }
-
-
-        console.log(
-            "Prato excluído com sucesso!"
-        );
-
-
-        alert(
-            `"${nome}" foi excluído com sucesso!`
-        );
-
-
+        alert(`"${nome}" foi excluído com sucesso!`);
         await carregarPratos();
 
+    } catch (erro) {
+        mostrarErro("Não foi possível excluir o prato.", erro);
     }
-
-    catch (erro) {
-
-        console.error(
-            "Erro ao excluir prato:",
-            erro
-        );
-
-
-        alert(
-
-            "Não foi possível excluir o prato.\n\n" +
-            erro.message
-
-        );
-
-    }
-
 }
 
 
 /* =========================================
-   ENVIAR IMAGEM DO PRATO
-========================================= */
-
-async function enviarImagem(
-    arquivo
-) {
-
-    console.log(
-        "Enviando imagem:",
-        arquivo.name
-    );
-
-
-    const extensao =
-        arquivo.name
-            .split(".")
-            .pop();
-
-
-    const nomeArquivo =
-        `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}.${extensao}`;
-
-
-    const caminho =
-        `pratos/${nomeArquivo}`;
-
-
-    console.log(
-        "Caminho:",
-        caminho
-    );
-
-
-    const resposta =
-        await fetch(
-
-            `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${caminho}`,
-
-            {
-
-                method: "POST",
-
-                headers: {
-
-                    "apikey":
-                        SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`,
-
-                    "Content-Type":
-                        arquivo.type
-
-                },
-
-                body:
-                    arquivo
-
-            }
-
-        );
-
-
-    if (!resposta.ok) {
-
-        const erro =
-            await resposta.text();
-
-
-        throw new Error(
-            `Erro no upload (${resposta.status}): ${erro}`
-        );
-
-    }
-
-
-    console.log(
-        "Imagem enviada com sucesso!"
-    );
-
-
-    return (
-
-        `${SUPABASE_URL}` +
-        `/storage/v1/object/public/` +
-        `${BUCKET}/${caminho}`
-
-    );
-
-}
-
-
-/* =========================================
-   CARREGAR ALERGIAS PARA O PRATO
+   CARREGAR ALERGIAS PARA O FORMULÁRIO
 ========================================= */
 
 async function carregarAlergiasParaPrato() {
-
-    if (!listaAlergiasPrato) {
-
-        console.warn(
-            "Elemento listaAlergiasPrato não encontrado."
-        );
-
-        return;
-
-    }
-
+    if (!listaAlergiasPrato) return;
 
     listaAlergiasPrato.innerHTML =
-        `<p class="carregando">
-            Carregando alergias...
-        </p>`;
-
+        '<p class="carregando">Carregando alergias...</p>';
 
     try {
-
-        const resposta =
-            await fetch(
-
-                `${SUPABASE_URL}/rest/v1/alergia?select=*&order=id.asc`,
-
-                {
-
-                    method: "GET",
-
-                    headers: {
-
-                        "apikey":
-                            SUPABASE_KEY,
-
-                        "Authorization":
-                            `Bearer ${SUPABASE_KEY}`
-
-                    }
-
-                }
-
-            );
-
-
-        if (!resposta.ok) {
-
-            const erro =
-                await resposta.text();
-
-
-            throw new Error(
-                `Erro ${resposta.status}: ${erro}`
-            );
-
-        }
-
-
-        const alergias =
-            await resposta.json();
-
-
-        console.log(
-            "Alergias disponíveis para o prato:",
-            alergias
+        const resposta = await fetch(
+            `${SUPABASE_URL}/rest/v1/alergia?select=*&order=id.asc`,
+            {
+                headers: headersSupabase()
+            }
         );
 
+        await verificarResposta(resposta, "Erro ao carregar alergias");
 
-        mostrarAlergiasParaPrato(
-            alergias
-        );
+        const alergias = await resposta.json();
+        mostrarAlergiasParaPrato(alergias);
 
-    }
-
-    catch (erro) {
-
-        console.error(
-            "Erro ao carregar alergias para o prato:",
-            erro
-        );
-
-
+    } catch (erro) {
+        mostrarErro("Não foi possível carregar as alergias do prato.", erro);
         listaAlergiasPrato.innerHTML =
-            `<p>
-                Erro ao carregar as alergias.
-            </p>`;
-
+            "<p>Erro ao carregar as alergias.</p>";
     }
-
 }
 
+function mostrarAlergiasParaPrato(alergias) {
+    if (!listaAlergiasPrato) return;
 
-/* =========================================
-   MOSTRAR ALERGIAS PARA O PRATO
-========================================= */
-
-function mostrarAlergiasParaPrato(
-    alergias
-) {
-
-    listaAlergiasPrato.innerHTML =
-        "";
-
+    listaAlergiasPrato.innerHTML = "";
 
     if (!alergias.length) {
-
         listaAlergiasPrato.innerHTML =
-            `<p>
-                Nenhuma alergia cadastrada.
-            </p>`;
-
+            "<p>Nenhuma alergia cadastrada.</p>";
         return;
-
     }
 
+    alergias.forEach(alergia => {
+        const opcao = document.createElement("label");
+        opcao.className = "alergia-opcao";
 
-    alergias.forEach(
-        alergia => {
+        const imagem = alergia.imagem ||
+            "https://via.placeholder.com/100?text=Sem+imagem";
 
-            const opcao =
-                document.createElement(
-                    "label"
-                );
+        opcao.innerHTML = `
+            <input
+                type="checkbox"
+                name="alergiasPrato"
+                value="${alergia.id}"
+            >
 
+            <img
+                class="alergia-opcao-imagem"
+                src="${imagem}"
+                alt="${alergia.nome || "Alergia"}"
+            >
 
-            opcao.className =
-                "alergia-opcao";
+            <span class="alergia-opcao-nome">
+                ${alergia.nome || "Sem nome"}
+            </span>
+        `;
 
-
-            const imagem =
-                alergia.imagem ||
-                "https://via.placeholder.com/100?text=Sem+imagem";
-
-
-            opcao.innerHTML = `
-
-                <input
-                    type="checkbox"
-                    name="alergiasPrato"
-                    value="${alergia.id}"
-                >
-
-                <img
-                    class="alergia-opcao-imagem"
-                    src="${imagem}"
-                    alt="${alergia.nome || "Alergia"}"
-                >
-
-                <span class="alergia-opcao-nome">
-                    ${alergia.nome || "Sem nome"}
-                </span>
-
-            `;
+        listaAlergiasPrato.appendChild(opcao);
+    });
+}
 
 
-            listaAlergiasPrato.appendChild(
-                opcao
-            );
+/* =========================================
+   SALVAR RELAÇÕES DE ALERGIAS DO PRATO
+========================================= */
 
+async function salvarAlergiasDoPrato(pratoId, editar = false) {
+    const alergiasSelecionadas = Array.from(
+        document.querySelectorAll(
+            'input[name="alergiasPrato"]:checked'
+        )
+    ).map(checkbox => Number(checkbox.value));
+
+    if (editar) {
+        const respostaDelete = await fetch(
+            `${SUPABASE_URL}/rest/v1/prato_alergia?prato_id=eq.${encodeURIComponent(pratoId)}`,
+            {
+                method: "DELETE",
+                headers: headersSupabase({
+                    "Prefer": "return=minimal"
+                })
+            }
+        );
+
+        await verificarResposta(
+            respostaDelete,
+            "Erro ao remover as relações antigas de alergias"
+        );
+    }
+
+    if (!alergiasSelecionadas.length) return;
+
+    const relacoes = alergiasSelecionadas.map(alergiaId => ({
+        prato_id: Number(pratoId),
+        alergia_id: alergiaId
+    }));
+
+    const resposta = await fetch(
+        `${SUPABASE_URL}/rest/v1/prato_alergia`,
+        {
+            method: "POST",
+            headers: headersSupabase({
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }),
+            body: JSON.stringify(relacoes)
         }
     );
 
+    await verificarResposta(
+        resposta,
+        "Erro ao salvar as alergias do prato"
+    );
 }
 
 
 /* =========================================
-   SALVAR ALERGIAS DO PRATO
+   ADICIONAR OU EDITAR PRATO
 ========================================= */
 
-async function salvarAlergiasDoPrato(
-    pratoId
-) {
-
-    const checkboxes =
-        document.querySelectorAll(
-            'input[name="alergiasPrato"]:checked'
-        );
-
-
-    const alergiasSelecionadas =
-        Array.from(checkboxes)
-            .map(
-                checkbox =>
-                    Number(
-                        checkbox.value
-                    )
-            );
-
-
-    console.log(
-        "Alergias selecionadas:",
-        alergiasSelecionadas
-    );
-
-
-    if (!alergiasSelecionadas.length) {
-
-        console.log(
-            "Nenhuma alergia selecionada para este prato."
-        );
-
-        return;
-
-    }
-
-
-    const relacoes =
-        alergiasSelecionadas.map(
-            alergiaId => ({
-
-                prato_id:
-                    Number(pratoId),
-
-                alergia_id:
-                    Number(alergiaId)
-
-            })
-        );
-
-
-    console.log(
-        "Relações prato_alergia:",
-        relacoes
-    );
-
-
-    const resposta =
-        await fetch(
-
-            `${SUPABASE_URL}/rest/v1/prato_alergia`,
-
-            {
-
-                method: "POST",
-
-                headers: {
-
-                    "apikey":
-                        SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`,
-
-                    "Content-Type":
-                        "application/json",
-
-                    "Prefer":
-                        "return=minimal"
-
-                },
-
-                body:
-                    JSON.stringify(
-                        relacoes
-                    )
-
-            }
-
-        );
-
-
-    if (!resposta.ok) {
-
-        const erro =
-            await resposta.text();
-
-
-        throw new Error(
-            `Erro ao salvar as alergias do prato (${resposta.status}): ${erro}`
-        );
-
-    }
-
-
-    console.log(
-        "Alergias do prato salvas com sucesso!"
-    );
-
-}
-
-
-/* =========================================
-   ADICIONAR / EDITAR PRATO
-========================================= */
-
-form.addEventListener(
-    "submit",
-
-    async function (evento) {
-
+if (form) {
+    form.addEventListener("submit", async function (evento) {
         evento.preventDefault();
 
+        if (!botaoAdicionar) {
+            alert("O botão de adicionar prato não foi encontrado.");
+            return;
+        }
 
-        const nome =
-            document
-                .getElementById("nome")
-                .value
-                .trim();
+        try {
+            const nome = valorCampo("nome");
+            const descricao = valorCampo("descricao");
+            const categoria = valorCampo("categoria");
 
+            const precoValor = valorCampo("preco");
+            const quantidadeValor = valorCampo("quantidade");
+            const precoPequenoValor = valorCampo("preco_pequeno");
+            const precoMedioValor = valorCampo("preco_medio");
+            const precoGrandeValor = valorCampo("preco_grande");
 
-        const descricao =
-            document
-                .getElementById("descricao")
-                .value
-                .trim();
-
-
-        /* =====================================
-           NOVOS CAMPOS OPCIONAIS
-        ===================================== */
-
-        const precoValor =
-            document
-                .getElementById("preco")
-                .value;
-
-
-        const quantidadeValor =
-            document
-                .getElementById("quantidade")
-                .value;
-
-
-        const precoPequenoValor =
-            document
-                .getElementById("preco_pequeno")
-                .value;
-
-
-        const precoMedioValor =
-            document
-                .getElementById("preco_medio")
-                .value;
-
-
-        const precoGrandeValor =
-            document
-                .getElementById("preco_grande")
-                .value;
-
-
-        /* Se estiver vazio, envia NULL */
-
-        const preco =
-            precoValor === ""
-                ? null
-                : Number(precoValor);
-
-
-        const quantidade =
-            quantidadeValor === ""
+            const preco = precoValor === "" ? null : Number(precoValor);
+            const quantidade = quantidadeValor === ""
                 ? null
                 : Number(quantidadeValor);
 
-
-        const preco_pequeno =
-            precoPequenoValor === ""
+            const preco_pequeno = precoPequenoValor === ""
                 ? null
                 : Number(precoPequenoValor);
 
-
-        const preco_medio =
-            precoMedioValor === ""
+            const preco_medio = precoMedioValor === ""
                 ? null
                 : Number(precoMedioValor);
 
-
-        const preco_grande =
-            precoGrandeValor === ""
+            const preco_grande = precoGrandeValor === ""
                 ? null
                 : Number(precoGrandeValor);
 
+            const arquivo = inputImagem?.files?.[0] || null;
 
-        const categoria =
-            document
-                .getElementById("categoria")
-                .value;
-
-
-        const arquivo =
-            inputImagem.files[0];
-
-
-        /* =====================================
-           VALIDAÇÕES
-        ===================================== */
-
-        if (!nome) {
-
-            alert(
-                "Digite o nome do prato."
-            );
-
-            return;
-
-        }
-
-
-        /* PREÇO NORMAL É OPCIONAL */
-
-        if (
-            preco !== null &&
-            (
-                isNaN(preco) ||
-                preco < 0
-            )
-        ) {
-
-            alert(
-                "Digite um preço válido."
-            );
-
-            return;
-
-        }
-
-
-        /* QUANTIDADE É OPCIONAL */
-
-        if (
-            quantidade !== null &&
-            (
-                isNaN(quantidade) ||
-                quantidade < 0 ||
-                !Number.isInteger(quantidade)
-            )
-        ) {
-
-            alert(
-                "Digite uma quantidade válida."
-            );
-
-            return;
-
-        }
-
-
-        /* PREÇOS POR TAMANHO */
-
-        if (
-            preco_pequeno !== null &&
-            (
-                isNaN(preco_pequeno) ||
-                preco_pequeno < 0
-            )
-        ) {
-
-            alert(
-                "Digite um preço pequeno válido."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            preco_medio !== null &&
-            (
-                isNaN(preco_medio) ||
-                preco_medio < 0
-            )
-        ) {
-
-            alert(
-                "Digite um preço médio válido."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            preco_grande !== null &&
-            (
-                isNaN(preco_grande) ||
-                preco_grande < 0
-            )
-        ) {
-
-            alert(
-                "Digite um preço grande válido."
-            );
-
-            return;
-
-        }
-
-
-        if (!categoria) {
-
-            alert(
-                "Escolha uma categoria."
-            );
-
-            return;
-
-        }
-
-
-        /*
-         * Ao adicionar um prato, a imagem continua
-         * sendo obrigatória.
-         *
-         * Ao editar, podemos manter a imagem atual.
-         */
-
-        if (!arquivo && !pratoEmEdicao) {
-
-            alert(
-                "Escolha uma imagem."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            arquivo &&
-            !arquivo.type.startsWith("image/")
-        ) {
-
-            alert(
-                "O arquivo selecionado não é uma imagem."
-            );
-
-            return;
-
-        }
-
-
-        /* =====================================
-           VALIDAR SE EXISTE ALGUM PREÇO
-        ===================================== */
-
-        if (
-
-            preco === null &&
-
-            preco_pequeno === null &&
-
-            preco_medio === null &&
-
-            preco_grande === null
-
-        ) {
-
-            alert(
-                "Digite um preço normal ou pelo menos um preço por tamanho."
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            botaoAdicionar.disabled =
-                true;
-
-
-            /* =====================================
-               IMAGEM
-            ===================================== */
-
-            let urlImagem =
-                pratoEmEdicao
-                    ? pratoEmEdicao.imagem || null
-                    : null;
-
-
-            /*
-             * Só faz upload se o usuário
-             * escolher uma nova imagem.
-             */
-
-            if (arquivo) {
-
-                botaoAdicionar.textContent =
-                    "Enviando imagem...";
-
-
-                urlImagem =
-                    await enviarImagem(
-                        arquivo
-                    );
-
-
-                console.log(
-                    "URL da imagem:",
-                    urlImagem
-                );
-
-            }
-
-
-            /* =====================================
-               DADOS DO PRATO
-            ===================================== */
-
-            const dados = {
-
-                nome:
-                    nome,
-
-                descricao:
-                    descricao,
-
-                preco:
-                    preco,
-
-                categoria:
-                    categoria,
-
-                imagem:
-                    urlImagem,
-
-                quantidade:
-                    quantidade,
-
-                preco_pequeno:
-                    preco_pequeno,
-
-                preco_medio:
-                    preco_medio,
-
-                preco_grande:
-                    preco_grande
-
-            };
-
-
-            console.log(
-                "Dados enviados:",
-                dados
-            );
-
-
-            /* =====================================
-               EDITAR PRATO EXISTENTE
-            ===================================== */
-
-            if (pratoEmEdicao) {
-
-                botaoAdicionar.textContent =
-                    "Salvando alterações...";
-
-
-                await atualizarPrato(
-                    pratoEmEdicao.id,
-                    dados
-                );
-
-
-                /* =====================================
-                   ATUALIZAR ALERGÊNICOS
-                ===================================== */
-
-                botaoAdicionar.textContent =
-                    "Salvando alergênicos...";
-
-
-                await atualizarAlergiasDoPrato(
-                    pratoEmEdicao.id
-                );
-
-
-                alert(
-                    "Prato atualizado com sucesso!"
-                );
-
-
-                cancelarEdicao();
-
-
-                await carregarPratos();
-
-
+            if (!nome) {
+                alert("Digite o nome do prato.");
                 return;
-
             }
 
-
-            /* =====================================
-               ADICIONAR NOVO PRATO
-            ===================================== */
-
-            if (!urlImagem) {
-
-                throw new Error(
-                    "A imagem do prato não foi enviada."
-                );
-
+            if (!categoria) {
+                alert("Escolha uma categoria.");
+                return;
             }
 
-
-            botaoAdicionar.textContent =
-                "Salvando prato...";
-
-
-            const resposta =
-                await fetch(
-
-                    `${SUPABASE_URL}/rest/v1/prato`,
-
-                    {
-
-                        method: "POST",
-
-                        headers: {
-
-                            "apikey":
-                                SUPABASE_KEY,
-
-                            "Authorization":
-                                `Bearer ${SUPABASE_KEY}`,
-
-                            "Content-Type":
-                                "application/json",
-
-                            "Prefer":
-                                "return=representation"
-
-                        },
-
-                        body:
-                            JSON.stringify(
-                                dados
-                            )
-
-                    }
-
-                );
-
-
-            if (!resposta.ok) {
-
-                const erro =
-                    await resposta.text();
-
-
-                throw new Error(
-                    `Erro ao salvar (${resposta.status}): ${erro}`
-                );
-
+            if (!pratoEmEdicao && !arquivo) {
+                alert("Escolha uma imagem para o prato.");
+                return;
             }
 
+            if (arquivo && !arquivo.type.startsWith("image/")) {
+                alert("O arquivo selecionado não é uma imagem.");
+                return;
+            }
 
-            const pratoSalvo =
-                await resposta.json();
+            const precos = [preco, preco_pequeno, preco_medio, preco_grande];
 
+            if (precos.every(valor => valor === null)) {
+                alert(
+                    "Digite um preço normal ou pelo menos um preço por tamanho."
+                );
+                return;
+            }
 
-            console.log(
-                "Prato salvo:",
-                pratoSalvo
-            );
-
-
-            /* =====================================
-               PEGAR ID DO PRATO CRIADO
-            ===================================== */
-
-            const pratoCriado =
-                Array.isArray(pratoSalvo)
-                    ? pratoSalvo[0]
-                    : pratoSalvo;
-
+            if (precos.some(valor =>
+                valor !== null && (!Number.isFinite(valor) || valor < 0)
+            )) {
+                alert("Todos os preços preenchidos devem ser válidos e não negativos.");
+                return;
+            }
 
             if (
-                !pratoCriado ||
-                !pratoCriado.id
+                quantidade !== null &&
+                (!Number.isInteger(quantidade) || quantidade < 0)
             ) {
-
-                throw new Error(
-                    "O prato foi salvo, mas o ID não foi retornado pelo Supabase."
-                );
-
+                alert("Digite uma quantidade válida, usando um número inteiro não negativo.");
+                return;
             }
 
+            botaoAdicionar.disabled = true;
 
-            const pratoId =
-                pratoCriado.id;
+            let urlImagem = pratoEmEdicao?.imagem || null;
 
+            if (arquivo) {
+                botaoAdicionar.textContent = "Enviando imagem...";
+                urlImagem = await enviarImagem(arquivo, "pratos");
+            }
 
-            console.log(
-                "ID do novo prato:",
-                pratoId
-            );
+            botaoAdicionar.textContent = pratoEmEdicao
+                ? "Salvando alterações..."
+                : "Salvando prato...";
 
+            const dados = {
+                nome,
+                descricao,
+                categoria,
+                preco,
+                imagem: urlImagem,
+                quantidade,
+                preco_pequeno,
+                preco_medio,
+                preco_grande
+            };
 
-            /* =====================================
-               SALVAR ALERGÊNICOS DO PRATO
-            ===================================== */
+            if (pratoEmEdicao) {
+                const idEditado = pratoEmEdicao.id;
 
-            botaoAdicionar.textContent =
-                "Salvando alergênicos...";
+                await atualizarPrato(idEditado, dados);
 
+                botaoAdicionar.textContent = "Salvando alergias...";
 
-            await salvarAlergiasDoPrato(
-                pratoId
-            );
+                await salvarAlergiasDoPrato(idEditado, true);
 
+                alert("Prato atualizado com sucesso!");
 
-            alert(
-                "Prato adicionado com sucesso!"
-            );
+                cancelarEdicao();
+                await carregarPratos();
 
+            } else {
+                const resposta = await fetch(
+                    `${SUPABASE_URL}/rest/v1/prato`,
+                    {
+                        method: "POST",
+                        headers: headersSupabase({
+                            "Content-Type": "application/json",
+                            "Prefer": "return=representation"
+                        }),
+                        body: JSON.stringify(dados)
+                    }
+                );
 
-            /* =====================================
-               LIMPAR FORMULÁRIO
-            ===================================== */
+                await verificarResposta(resposta, "Erro ao salvar prato");
 
-            form.reset();
+                const resultado = await resposta.json();
+                const pratoCriado = Array.isArray(resultado)
+                    ? resultado[0]
+                    : resultado;
 
+                if (!pratoCriado?.id) {
+                    throw new Error(
+                        "O Supabase não retornou o ID do prato criado."
+                    );
+                }
 
-            /* =====================================
-               ATUALIZAR LISTA
-            ===================================== */
+                await salvarAlergiasDoPrato(pratoCriado.id, false);
 
-            await carregarPratos();
+                alert("Prato adicionado com sucesso!");
 
-        }
+                form.reset();
 
-        catch (erro) {
+                const previewContainer =
+                    document.getElementById("previewContainer");
+                const previewImagem =
+                    document.getElementById("previewImagem");
 
-            console.error(
-                "ERRO COMPLETO:",
+                if (previewContainer) {
+                    previewContainer.style.display = "none";
+                }
+
+                if (previewImagem) {
+                    previewImagem.removeAttribute("src");
+                }
+
+                await carregarPratos();
+            }
+
+        } catch (erro) {
+            mostrarErro(
+                pratoEmEdicao
+                    ? "Não foi possível atualizar o prato."
+                    : "Não foi possível adicionar o prato.",
                 erro
             );
 
+        } finally {
+            botaoAdicionar.disabled = false;
 
-            alert(
-
-                "Não foi possível adicionar o prato.\n\n" +
-                erro.message
-
-            );
-
+            botaoAdicionar.textContent = pratoEmEdicao
+                ? "💾 Salvar alterações"
+                : "+ Adicionar prato";
         }
-
-        finally {
-
-            botaoAdicionar.disabled =
-                false;
-
-
-            if (pratoEmEdicao) {
-
-                botaoAdicionar.textContent =
-                    "💾 Salvar alterações";
-
-            }
-
-            else {
-
-                botaoAdicionar.textContent =
-                    "+ Adicionar prato";
-
-            }
-
-        }
-
-    }
-
-);
+    });
+}
 
 
 /* =========================================
-   PRÉVIA DA IMAGEM DO PRATO
-========================================= */
-
-inputImagem.addEventListener(
-    "change",
-
-    function () {
-
-        const arquivo =
-            inputImagem.files[0];
-
-
-        if (!arquivo) {
-
-            return;
-
-        }
-
-
-        if (
-            !arquivo.type.startsWith("image/")
-        ) {
-
-            return;
-
-        }
-
-
-        const leitor =
-            new FileReader();
-
-
-        leitor.onload =
-            function (evento) {
-
-                const previewContainer =
-                    document.getElementById(
-                        "previewContainer"
-                    );
-
-
-                const previewImagem =
-                    document.getElementById(
-                        "previewImagem"
-                    );
-
-
-                previewImagem.src =
-                    evento.target.result;
-
-
-                previewContainer.style.display =
-                    "block";
-
-            };
-
-
-        leitor.readAsDataURL(
-            arquivo
-        );
-
-    }
-
-);
-
-
-/* =========================================
-   =========================================
-   GERENCIAMENTO DE ALERGIAS
-   =========================================
-   ========================================= */
-
-
-/* =========================================
-   CARREGAR ALERGIAS
+   CARREGAR E MOSTRAR ALERGIAS
 ========================================= */
 
 async function carregarAlergias() {
+    if (!listaAlergias) return;
 
     listaAlergias.innerHTML =
-        `<p class="carregando">
-            Carregando alergias...
-        </p>`;
+        '<p class="carregando">Carregando alergias...</p>';
 
     try {
-
-        const resposta =
-            await fetch(
-
-                `${SUPABASE_URL}/rest/v1/alergia?select=*&order=id.asc`,
-
-                {
-
-                    method: "GET",
-
-                    headers: {
-
-                        "apikey":
-                            SUPABASE_KEY,
-
-                        "Authorization":
-                            `Bearer ${SUPABASE_KEY}`
-
-                    }
-
-                }
-
-            );
-
-
-        if (!resposta.ok) {
-
-            const erro =
-                await resposta.text();
-
-
-            throw new Error(
-                `Erro ${resposta.status}: ${erro}`
-            );
-
-        }
-
-
-        const alergias =
-            await resposta.json();
-
-
-        console.log(
-            "Alergias encontradas:",
-            alergias
+        const resposta = await fetch(
+            `${SUPABASE_URL}/rest/v1/alergia?select=*&order=id.asc`,
+            {
+                headers: headersSupabase()
+            }
         );
 
+        await verificarResposta(resposta, "Erro ao carregar alergias");
 
-        mostrarAlergias(
-            alergias
-        );
+        const alergias = await resposta.json();
 
+        mostrarAlergias(alergias);
+        mostrarAlergiasParaPrato(alergias);
 
-        /*
-         * Atualiza também a seleção de alergias
-         * disponível no formulário de pratos.
-         */
-
-        mostrarAlergiasParaPrato(
-            alergias
-        );
-
+    } catch (erro) {
+        mostrarErro("Não foi possível carregar as alergias.", erro);
+        listaAlergias.innerHTML = "<p>Erro ao carregar as alergias.</p>";
     }
-
-    catch (erro) {
-
-        console.error(
-            "Erro ao carregar alergias:",
-            erro
-        );
-
-
-        listaAlergias.innerHTML =
-            `<p>
-                Erro ao carregar as alergias.
-            </p>`;
-
-
-        if (listaAlergiasPrato) {
-
-            listaAlergiasPrato.innerHTML =
-                `<p>
-                    Erro ao carregar as alergias.
-                </p>`;
-
-        }
-
-    }
-
 }
 
+function mostrarAlergias(alergias) {
+    if (!listaAlergias) return;
 
-/* =========================================
-   MOSTRAR ALERGIAS
-========================================= */
-
-function mostrarAlergias(
-    alergias
-) {
-
-    listaAlergias.innerHTML =
-        "";
-
+    listaAlergias.innerHTML = "";
 
     if (!alergias.length) {
-
         listaAlergias.innerHTML =
-            `<p>
-                Nenhuma alergia cadastrada.
-            </p>`;
-
+            "<p>Nenhuma alergia cadastrada.</p>";
         return;
-
     }
 
-
-    alergias.forEach(
-        alergia => {
-
-            const card =
-                document.createElement(
-                    "article"
-                );
-
-
-            card.className =
-                "alergia";
-
-
-            const imagem =
-                alergia.imagem ||
-                "https://via.placeholder.com/100?text=Sem+imagem";
-
-
-            card.innerHTML = `
-
-                <img
-                    class="alergia-imagem"
-                    src="${imagem}"
-                    alt="${alergia.nome || "Alergia"}"
-                >
-
-
-                <span class="alergia-nome">
-
-                    ${alergia.nome || "Sem nome"}
-
-                </span>
-
-
-                <button
-                    class="botao-excluir-alergia"
-                    type="button"
-                >
-                    🗑️ Excluir
-                </button>
-
-            `;
-
-
-            const botaoExcluir =
-                card.querySelector(
-                    ".botao-excluir-alergia"
-                );
-
-
-            botaoExcluir.addEventListener(
-                "click",
-
-                function () {
-
-                    excluirAlergia(
-                        alergia.id,
-                        alergia.nome
-                    );
-
-                }
-
-            );
-
-
-            listaAlergias.appendChild(
-                card
-            );
-
-        }
-
-    );
-
-}
-
-
-/* =========================================
-   ENVIAR IMAGEM DA ALERGIA
-========================================= */
-
-async function enviarImagemAlergia(
-    arquivo
-) {
-
-    console.log(
-        "Enviando imagem da alergia:",
-        arquivo.name
-    );
-
-
-    const extensao =
-        arquivo.name
-            .split(".")
-            .pop();
-
-
-    const nomeArquivo =
-        `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2)}.${extensao}`;
-
-
-    const caminho =
-        `alergias/${nomeArquivo}`;
-
-
-    console.log(
-        "Caminho da imagem da alergia:",
-        caminho
-    );
-
-
-    const resposta =
-        await fetch(
-
-            `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${caminho}`,
-
-            {
-
-                method: "POST",
-
-                headers: {
-
-                    "apikey":
-                        SUPABASE_KEY,
-
-                    "Authorization":
-                        `Bearer ${SUPABASE_KEY}`,
-
-                    "Content-Type":
-                        arquivo.type
-
-                },
-
-                body:
-                    arquivo
-
-            }
-
-        );
-
-
-    if (!resposta.ok) {
-
-        const erro =
-            await resposta.text();
-
-
-        throw new Error(
-            `Erro no upload da alergia (${resposta.status}): ${erro}`
-        );
-
-    }
-
-
-    console.log(
-        "Imagem da alergia enviada com sucesso!"
-    );
-
-
-    return (
-
-        `${SUPABASE_URL}` +
-        `/storage/v1/object/public/` +
-        `${BUCKET}/${caminho}`
-
-    );
-
+    alergias.forEach(alergia => {
+        const card = document.createElement("article");
+        card.className = "alergia";
+
+        const imagem = alergia.imagem ||
+            "https://via.placeholder.com/100?text=Sem+imagem";
+
+        card.innerHTML = `
+            <img
+                class="alergia-imagem"
+                src="${imagem}"
+                alt="${alergia.nome || "Alergia"}"
+            >
+
+            <span class="alergia-nome">
+                ${alergia.nome || "Sem nome"}
+            </span>
+
+            <button
+                class="botao-excluir-alergia"
+                type="button"
+            >
+                🗑️ Excluir
+            </button>
+        `;
+
+        card.querySelector(".botao-excluir-alergia")
+            .addEventListener("click", () => {
+                excluirAlergia(alergia.id, alergia.nome);
+            });
+
+        listaAlergias.appendChild(card);
+    });
 }
 
 
@@ -2394,416 +934,161 @@ async function enviarImagemAlergia(
    PRÉVIA DA IMAGEM DA ALERGIA
 ========================================= */
 
-inputImagemAlergia.addEventListener(
-    "change",
+if (inputImagemAlergia) {
+    inputImagemAlergia.addEventListener("change", function () {
+        const arquivo = inputImagemAlergia.files?.[0];
 
-    function () {
-
-        const arquivo =
-            inputImagemAlergia.files[0];
-
+        if (!previewAlergiaContainer || !previewImagemAlergia) {
+            return;
+        }
 
         if (!arquivo) {
-
-            previewAlergiaContainer.style.display =
-                "none";
-
-
-            previewImagemAlergia.src =
-                "";
-
-
+            previewAlergiaContainer.style.display = "none";
+            previewImagemAlergia.removeAttribute("src");
             return;
-
         }
 
-
-        if (
-            !arquivo.type.startsWith("image/")
-        ) {
-
-            alert(
-                "O arquivo selecionado não é uma imagem."
-            );
-
-
-            inputImagemAlergia.value =
-                "";
-
-
-            previewAlergiaContainer.style.display =
-                "none";
-
-
-            previewImagemAlergia.src =
-                "";
-
-
+        if (!arquivo.type.startsWith("image/")) {
+            alert("O arquivo selecionado não é uma imagem.");
+            inputImagemAlergia.value = "";
+            previewAlergiaContainer.style.display = "none";
+            previewImagemAlergia.removeAttribute("src");
             return;
-
         }
 
+        const leitor = new FileReader();
 
-        const leitor =
-            new FileReader();
+        leitor.onload = function (evento) {
+            previewImagemAlergia.src = evento.target.result;
+            previewAlergiaContainer.style.display = "flex";
+        };
 
-
-        leitor.onload =
-            function (evento) {
-
-                previewImagemAlergia.src =
-                    evento.target.result;
-
-
-                previewAlergiaContainer.style.display =
-                    "flex";
-
-            };
-
-
-        leitor.readAsDataURL(
-            arquivo
-        );
-
-    }
-
-);
+        leitor.readAsDataURL(arquivo);
+    });
+}
 
 
 /* =========================================
    ADICIONAR ALERGIA
 ========================================= */
 
-formAlergia.addEventListener(
-    "submit",
-
-    async function (evento) {
-
+if (formAlergia) {
+    formAlergia.addEventListener("submit", async function (evento) {
         evento.preventDefault();
 
-
-        const nome =
-            document
-                .getElementById("nomeAlergia")
-                .value
-                .trim();
-
-
-        const arquivo =
-            inputImagemAlergia.files[0];
-
-
-        /* =====================================
-           VALIDAÇÕES
-        ===================================== */
-
-        if (!nome) {
-
-            alert(
-                "Digite o nome da alergia."
-            );
-
-            return;
-
-        }
-
-
-        if (!arquivo) {
-
-            alert(
-                "Escolha uma imagem para a alergia."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            !arquivo.type.startsWith("image/")
-        ) {
-
-            alert(
-                "O arquivo selecionado não é uma imagem."
-            );
-
-            return;
-
-        }
-
-
         try {
+            const nome = valorCampo("nomeAlergia");
+            const arquivo = inputImagemAlergia?.files?.[0];
 
-            botaoAdicionarAlergia.disabled =
-                true;
-
-
-            botaoAdicionarAlergia.textContent =
-                "Enviando imagem...";
-
-
-            /* =====================================
-               UPLOAD
-            ===================================== */
-
-            const urlImagem =
-                await enviarImagemAlergia(
-                    arquivo
-                );
-
-
-            console.log(
-                "URL da imagem da alergia:",
-                urlImagem
-            );
-
-
-            /* =====================================
-               SALVAR NA TABELA ALERGIA
-            ===================================== */
-
-            botaoAdicionarAlergia.textContent =
-                "Salvando alergia...";
-
-
-            const dados = {
-
-                nome:
-                    nome,
-
-                imagem:
-                    urlImagem
-
-            };
-
-
-            const resposta =
-                await fetch(
-
-                    `${SUPABASE_URL}/rest/v1/alergia`,
-
-                    {
-
-                        method: "POST",
-
-                        headers: {
-
-                            "apikey":
-                                SUPABASE_KEY,
-
-                            "Authorization":
-                                `Bearer ${SUPABASE_KEY}`,
-
-                            "Content-Type":
-                                "application/json",
-
-                            "Prefer":
-                                "return=representation"
-
-                        },
-
-                        body:
-                            JSON.stringify(
-                                dados
-                            )
-
-                    }
-
-                );
-
-
-            if (!resposta.ok) {
-
-                const erro =
-                    await resposta.text();
-
-
-                throw new Error(
-                    `Erro ao salvar alergia (${resposta.status}): ${erro}`
-                );
-
+            if (!nome) {
+                alert("Digite o nome da alergia.");
+                return;
             }
 
+            if (!arquivo) {
+                alert("Escolha uma imagem para a alergia.");
+                return;
+            }
 
-            const alergiaSalva =
-                await resposta.json();
+            if (!arquivo.type.startsWith("image/")) {
+                alert("O arquivo selecionado não é uma imagem.");
+                return;
+            }
 
+            if (botaoAdicionarAlergia) {
+                botaoAdicionarAlergia.disabled = true;
+                botaoAdicionarAlergia.textContent = "Enviando imagem...";
+            }
 
-            console.log(
-                "Alergia salva:",
-                alergiaSalva
+            const urlImagem = await enviarImagem(arquivo, "alergias");
+
+            if (botaoAdicionarAlergia) {
+                botaoAdicionarAlergia.textContent = "Salvando alergia...";
+            }
+
+            const resposta = await fetch(
+                `${SUPABASE_URL}/rest/v1/alergia`,
+                {
+                    method: "POST",
+                    headers: headersSupabase({
+                        "Content-Type": "application/json",
+                        "Prefer": "return=representation"
+                    }),
+                    body: JSON.stringify({
+                        nome,
+                        imagem: urlImagem
+                    })
+                }
             );
 
+            await verificarResposta(resposta, "Erro ao salvar alergia");
 
-            alert(
-                "Alergia adicionada com sucesso!"
-            );
-
-
-            /* =====================================
-               LIMPAR FORMULÁRIO
-            ===================================== */
+            alert("Alergia adicionada com sucesso!");
 
             formAlergia.reset();
 
+            if (previewAlergiaContainer) {
+                previewAlergiaContainer.style.display = "none";
+            }
 
-            previewAlergiaContainer.style.display =
-                "none";
-
-
-            previewImagemAlergia.src =
-                "";
-
-
-            /* =====================================
-               ATUALIZAR LISTAS
-            ===================================== */
+            if (previewImagemAlergia) {
+                previewImagemAlergia.removeAttribute("src");
+            }
 
             await carregarAlergias();
 
+        } catch (erro) {
+            mostrarErro("Não foi possível adicionar a alergia.", erro);
+
+        } finally {
+            if (botaoAdicionarAlergia) {
+                botaoAdicionarAlergia.disabled = false;
+                botaoAdicionarAlergia.textContent = "+ Adicionar alergia";
+            }
         }
-
-        catch (erro) {
-
-            console.error(
-                "ERRO AO ADICIONAR ALERGIA:",
-                erro
-            );
-
-
-            alert(
-
-                "Não foi possível adicionar a alergia.\n\n" +
-                erro.message
-
-            );
-
-        }
-
-        finally {
-
-            botaoAdicionarAlergia.disabled =
-                false;
-
-
-            botaoAdicionarAlergia.textContent =
-                "+ Adicionar alergia";
-
-        }
-
-    }
-
-);
+    });
+}
 
 
 /* =========================================
    EXCLUIR ALERGIA
 ========================================= */
 
-async function excluirAlergia(
-    id,
-    nome
-) {
-
-    const confirmar =
-        confirm(
-            `Tem certeza que deseja excluir "${nome}"?`
-        );
-
-
-    if (!confirmar) {
-
+async function excluirAlergia(id, nome) {
+    if (!confirm(`Tem certeza que deseja excluir "${nome}"?`)) {
         return;
-
     }
-
 
     try {
-
-        console.log(
-            "Excluindo alergia:",
-            id
+        const resposta = await fetch(
+            `${SUPABASE_URL}/rest/v1/alergia?id=eq.${encodeURIComponent(id)}`,
+            {
+                method: "DELETE",
+                headers: headersSupabase({
+                    "Prefer": "return=representation"
+                })
+            }
         );
 
+        await verificarResposta(resposta, "Erro ao excluir alergia");
 
-        const resposta =
-            await fetch(
-
-                `${SUPABASE_URL}/rest/v1/alergia?id=eq.${id}`,
-
-                {
-
-                    method: "DELETE",
-
-                    headers: {
-
-                        "apikey":
-                            SUPABASE_KEY,
-
-                        "Authorization":
-                            `Bearer ${SUPABASE_KEY}`,
-
-                        "Prefer":
-                            "return=representation"
-
-                    }
-
-                }
-
-            );
-
-
-        if (!resposta.ok) {
-
-            const erro =
-                await resposta.text();
-
-
-            throw new Error(
-                `Erro ao excluir alergia (${resposta.status}): ${erro}`
-            );
-
-        }
-
-
-        console.log(
-            "Alergia excluída com sucesso!"
-        );
-
-
-        alert(
-            `"${nome}" foi excluída com sucesso!`
-        );
-
+        alert(`"${nome}" foi excluída com sucesso!`);
 
         await carregarAlergias();
+        await carregarPratos();
 
-    }
-
-    catch (erro) {
-
-        console.error(
-            "Erro ao excluir alergia:",
+    } catch (erro) {
+        mostrarErro(
+            "Não foi possível excluir a alergia. Se ela estiver associada a pratos, remova essa associação primeiro.",
             erro
         );
-
-
-        alert(
-
-            "Não foi possível excluir a alergia.\n\n" +
-            erro.message
-
-        );
-
     }
-
 }
 
 
 /* =========================================
-   INICIAR
+   INICIALIZAÇÃO
 ========================================= */
 
 carregarPratos();
-
 carregarAlergias();
