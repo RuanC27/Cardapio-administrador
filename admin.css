@@ -962,3 +962,135 @@ select:focus {
     }
 
 }
+
+/* =========================================
+   BOTÕES DE AÇÃO DOS PRATOS
+========================================= */
+
+.botoes-acoes-prato {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Estilo comum dos botões */
+
+.botao-editar,
+.botao-excluir {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* Botão editar */
+
+.botao-editar {
+    background: #2563eb;
+}
+
+.botao-editar:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.botao-editar:active {
+    transform: translateY(0);
+}
+
+/* Botão excluir */
+
+.botao-excluir {
+    background: #dc3545;
+}
+
+.botao-excluir:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.2);
+}
+
+.botao-excluir:active {
+    transform: translateY(0);
+}
+
+/* Botões desativados */
+
+.botao-editar:disabled,
+.botao-excluir:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Botão salvar alterações no formulário */
+
+#botaoAdicionar.modo-edicao {
+    background: #198754;
+}
+
+#botaoAdicionar.modo-edicao:hover {
+    background: #157347;
+}
+
+/* Botão cancelar edição */
+
+#botaoCancelarEdicao {
+    grid-column: span 2;
+    width: 100%;
+    min-height: 44px;
+    padding: 11px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #f1f3f5;
+    color: #343a40;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+#botaoCancelarEdicao:hover {
+    background: #e2e6ea;
+    border-color: #b8bec5;
+}
+
+/* Destaque do formulário durante a edição */
+
+#formPrato.modo-edicao {
+    padding: 16px;
+    border: 1px solid #b7d4ff;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+
+/* Ajustes para celular */
+
+@media (max-width: 700px) {
+    #botaoCancelarEdicao {
+        grid-column: span 1;
+    }
+
+    .botoes-acoes-prato {
+        gap: 8px;
+    }
+
+    .botao-editar,
+    .botao-excluir {
+        padding: 12px;
+    }
+}
